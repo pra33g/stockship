@@ -2,7 +2,7 @@ import helper
 import pandas as pd
 
 def createWeeklyData(stock):
-    df = pd.read_csv(f"{stock}.csv")
+    df = pd.read_csv(f"{stock}.csv", parse_dates=["Date"])
 
     days = df['Day']
     weekDays = [
