@@ -68,11 +68,21 @@ ce1Temp = []
 pe1Temp = []
 ce2Temp = []
 pe2Temp = []
+roundBase = 50
 for i,val in enumerate(week_df['WeekClose']):
-    ce1 = val + year_hl_mean / 2
-    pe1 = val - year_hl_mean / 2
-    ce2 = ce1 + year_hl_mean / 2
-    pe2 = pe1 - year_hl_mean / 2
+    constant = year_hl_mean / 2
+    #round the constant to nearest roundbase
+    constant = helper.roundDown(constant, roundBase)
+    #set ce,pe and round it
+    ce1 = val + constant
+    pe1 = val - constant
+    ce2 = ce1 + constant
+    pe2 = pe1 - constant
+    ce1 = helper.roundDown(ce1, roundBase)
+    ce2 = helper.roundDown(ce2, roundBase)
+    pe1 = helper.roundDown(pe1, roundBase)
+    pe2 = helper.roundDown(pe2, roundBase)
+    #add ce, pe to lists
     ce1Temp.append(ce1)
     pe1Temp.append(pe1)
     ce2Temp.append(ce2)
@@ -82,4 +92,5 @@ week_df['CE1'] = ce1Temp
 week_df['PE1'] = pe1Temp
 week_df['CE2'] = ce2Temp
 week_df['PE2'] = pe2Temp
+
 print(week_df)
