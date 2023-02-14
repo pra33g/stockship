@@ -1,3 +1,4 @@
+import helper
 import pandas as pd
 stock = "nifty"
 df = pd.read_csv(f"{stock}.csv")
@@ -63,12 +64,22 @@ for i, week in enumerate(weeks):
 year_hl_mean = week_df['High-Low'].mean()
 year_hl_median = week_df['High-Low'].median()
 
-ce = []
-pe = []
+ce1Temp = []
+pe1Temp = []
+ce2Temp = []
+pe2Temp = []
 for i,val in enumerate(week_df['WeekClose']):
-    ce.append(val + year_hl_mean / 2)
-    pe.append(val - year_hl_mean / 2)
+    ce1 = val + year_hl_mean / 2
+    pe1 = val - year_hl_mean / 2
+    ce2 = ce1 + year_hl_mean / 2
+    pe2 = pe1 - year_hl_mean / 2
+    ce1Temp.append(ce1)
+    pe1Temp.append(pe1)
+    ce2Temp.append(ce2)
+    pe2Temp.append(pe2)
 
-week_df['CE'] = ce
-week_df['PE'] = pe
+week_df['CE1'] = ce1Temp
+week_df['PE1'] = pe1Temp
+week_df['CE2'] = ce2Temp
+week_df['PE2'] = pe2Temp
 print(week_df)
