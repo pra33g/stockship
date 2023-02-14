@@ -35,7 +35,13 @@ for i, week in enumerate(weeks):
     w_high = week[0]["High"]
     w_low = week[0]["Low"]
     w_open = week[0]["Open"]
-    w_close = week[0]["Close"]
+    #set close to next week's first day's close
+    if i == len(weeks) - 1:
+        #set to current week's last day's close
+        w_close = weeks[i][-1]["Close"]
+    else:
+        #set to next week's first day's close
+        w_close = weeks[i + 1][0]["Close"]
     w_date = week[-1]["Date"]
     w_day = week[-1]["Day"]
     for day in week:
