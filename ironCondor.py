@@ -1,4 +1,6 @@
 import weeklyData
 
 def ironCondorAlgorithm():
-    pass
+    print(weeklyData.createWeeklyData("NIFTY"))
+
+ironCondorAlgorithm()

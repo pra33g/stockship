@@ -79,8 +79,8 @@ def createWeeklyData(stock):
         pe1 = val - constant
         ce2 = ce1 + constant
         pe2 = pe1 - constant
-        ce1 = helper.roundDown(ce1, roundBase)
-        ce2 = helper.roundDown(ce2, roundBase)
+        ce1 = helper.roundUp(ce1, roundBase)
+        ce2 = helper.roundUp(ce2, roundBase)
         pe1 = helper.roundDown(pe1, roundBase)
         pe2 = helper.roundDown(pe2, roundBase)
         #add ce, pe to lists
