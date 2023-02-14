@@ -24,8 +24,10 @@ def createWeeklyData(stock):
             weeks.append([])
 
     week_df = pd.DataFrame(columns = [
-        "Date",
-        "Day",
+        "FirstDate",
+        "FirstDay",
+        "LastDate",
+        "LastDay",
         "WeekOpen",
         "WeekHigh",
         "WeekLow",
@@ -44,8 +46,10 @@ def createWeeklyData(stock):
         else:
             #set to next week's first day's close
             w_close = weeks[i + 1][0]["Close"]
-        w_date = week[-1]["Date"]
-        w_day = week[-1]["Day"]
+        w_fdate = week[0]["Date"]
+        w_fday = week[0]["Day"]
+        w_ldate = week[-1]["Date"]
+        w_lday = week[-1]["Day"]
         for day in week:
             if day["High"] > w_high:
                 w_high = day["High"]
@@ -53,8 +57,10 @@ def createWeeklyData(stock):
                 w_low = day["Low"]    
         # print(w_date, w_day, w_high, w_low, w_close, i)
         week_df.loc[len(week_df)] = [
-            w_date,
-            w_day,
+            w_fdate,
+            w_fday,
+            w_ldate,
+            w_lday,
             w_open,
             w_high,
             w_low,
