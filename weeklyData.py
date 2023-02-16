@@ -20,15 +20,17 @@ def createWeeklyData(stock):
     weekDays = helper.weekDaysList
     idx_weeks = 0
     weeks = [[]]
+   
+   
     for idx_days, day in enumerate(days):
         if pd.isna(day):
             continue
         # weeks[idx_weeks].append(df.loc[idx_days].values.tolist())
         weeks[idx_weeks].append(df.loc[idx_days])
-        if not pd.isna(days[idx_days + 1]) and weekDays.index(days[idx_days]) >= weekDays.index(days[idx_days + 1]):
+        if idx_days+1 <= len(days)-1 and not pd.isna(days[idx_days + 1]) and weekDays.index(days[idx_days]) >= weekDays.index(days[idx_days + 1]):
             idx_weeks += 1
             weeks.append([])
-
+    
     week_df = pd.DataFrame(columns = [
         "FirstDate",
         "FirstDay",
@@ -105,4 +107,6 @@ def createWeeklyData(stock):
     week_df['PE1'] = pe1Temp
     week_df['CE2'] = ce2Temp
     week_df['PE2'] = pe2Temp
+    print(week_df)
+    exit()
     return (week_df, weeks)
