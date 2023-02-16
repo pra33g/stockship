@@ -1,17 +1,23 @@
 import helper
 import pandas as pd
-
+def toUpperDataFrame(day):
+    if pd.isna(day):
+        return None
+    else:
+        return day.upper()
 def createWeeklyData(stock):
     df = pd.read_csv(f"{stock}.csv", parse_dates=["Date"])
-
+    df['Day'] = df['Day'].apply(toUpperDataFrame)
     days = df['Day']
-    weekDays = [
-        "Friday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-    ]
+
+    # weekDays = [
+    #     "Friday",
+    #     "Monday",
+    #     "Tuesday",
+    #     "Wednesday",
+    #     "Thursday",
+    # ]
+    weekDays = helper.weekDaysMap
     idx_weeks = 0
     weeks = [[]]
     for idx_days, day in enumerate(days):
@@ -99,4 +105,4 @@ def createWeeklyData(stock):
     week_df['PE1'] = pe1Temp
     week_df['CE2'] = ce2Temp
     week_df['PE2'] = pe2Temp
-    return week_df
+    return (week_df, weeks)
