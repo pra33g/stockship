@@ -17,7 +17,7 @@ def createWeeklyData(stock):
     #     "Wednesday",
     #     "Thursday",
     # ]
-    weekDays = helper.weekDaysMap
+    weekDays = helper.weekDaysList
     idx_weeks = 0
     weeks = [[]]
     for idx_days, day in enumerate(days):
