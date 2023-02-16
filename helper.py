@@ -23,7 +23,7 @@ class Day(Enum):
     WEDNESDAY = 3
     THURSDAY = 4
 
-weekDaysMap = [
+weekDaysList = [
     "FRIDAY",
     "MONDAY",
     "TUESDAY",
