@@ -2,6 +2,7 @@ import weeklyData
 import pandas as pd
 import datetime
 import helper
+import os
 class IronCondor:
     defaultExitTime = datetime.time(15, 14, 59)
     defaultEntryTime = datetime.time(15, 14, 59)
@@ -65,6 +66,9 @@ class IronCondor:
             month_num = "{:02d}".format(date.month)
             month_dir = f"{month}_{date.year}"
             fileName = f"{fileNamePrefix}{symbol}_OPTIONS_{day}{month_num}{date.year}.{extension}"
+            filePath = os.path.join(data_dir, month_dir, fileName)
+            df = pd.read_csv(filePath)
+            #df[(df[""])]
             for idx, strikePrice in enumerate(strikePrices):
                 optionType = None
                 if idx % 2 == 0:
@@ -72,8 +76,7 @@ class IronCondor:
                 else:
                     optionType = "PE"
                 stock_id = f"{self.stockName}{day}{month}{yearStripped}{strikePrice}{optionType}.{symbol}"
-                
-                
+                print(stock_id)
     def ironCondorAlgorithm(self):
         weeklyData_tup = weeklyData.createWeeklyData(self.stockName)
         wd = weeklyData_tup[0]
@@ -111,6 +114,6 @@ class IronCondor:
             pe2 = data['PE2']
             self.loadPrices([entryDate, exitDate], [ce1, pe1, ce2, pe2])
             #get entry prices based on stockname, date, optiontype
-            
+            input()
 ic = IronCondor("NIFTY", "WEDNESDAY", datetime.time(0,0,0), "THURSDAY", datetime.time(0,0,0,0))
 ic.ironCondorAlgorithm()
