@@ -3,19 +3,77 @@ import pandas as pd
 import datetime
 import helper
 class IronCondor:
-    def __init__(self, stockName, entryDay, entryTime, exitDay, exitTime):
+    defaultExitTime = datetime.time(15, 14, 59)
+    defaultEntryTime = datetime.time(15, 14, 59)
+    def __init__(self, stockName, entryDay = None, entryTime = None, exitDay = None, exitTime = None):
         self.stockName = stockName
         self.entryDay = entryDay
         self.entryTime = entryTime
         self.exitDay = exitDay
         self.exitTime = exitTime
-        
-    def loadPrice(self, stock, date, optionType, entryTime, exitTime):
+
+    def calcEntryDate(self, week, prefDay):
+        ret = None
+        if prefDay is None:
+            ret = week[0]
+        else:
+            wdli = helper.weekDaysList.index
+            prefDayIndex = wdli(prefDay)
+            for day in week:
+                curDay = day['Day']
+                curDayIndex = wdli(curDay)
+                if curDayIndex >= prefDayIndex:
+                    ret = day
+                    break
+        return ret.Date
+    def calcExitDate(self, week, prefDay):
+        ret = None
+        if prefDay is None:
+            ret = week[-1]
+        else:
+            wdli = helper.weekDaysList.index
+            prefDayIndex = wdli(prefDay)
+            for day in week:
+                curDay = day['Day']
+                curDayIndex = wdli(curDay)
+                if curDayIndex <= prefDayIndex:
+                    ret = day
+            if ret is None:
+                ret = week[0]
+        return ret.Date
+    def calcEntryTime(self):
+        if self.entryTime is None:
+            self.entryTime = IronCondor.defaultEntryTime
+        return self.entryTime
+
+    def calcExitTime(self):
+        if self.exitTime is None:
+            self.exitTime = IronCondor.defaultExitTime
+        return self.exitTime
+
+    def loadPrices(self, dates, strikePrices):
         symbol = "NFO"
-        data_dir = f"{stock}_OPTIONS_DATA"
-        month_dir = f"{helper.Month[date.month - 1]}_{date.year}"
-        #stock_id =
- 
+        extension = "csv"
+        fileNamePrefix = "GFDL"
+        data_dir = f"{self.stockName}_OPTIONS_DATA"
+
+        for date in dates:       
+            #NIFTY03FEB22171800PE.NFO
+            day = "{:02d}".format(date.day)
+            yearStripped = str(date.year)[-2:]
+            month = helper.Month[date.month - 1]
+            month_num = "{:02d}".format(date.month)
+            month_dir = f"{month}_{date.year}"
+            fileName = f"{fileNamePrefix}{symbol}_OPTIONS_{day}{month_num}{date.year}.{extension}"
+            for idx, strikePrice in enumerate(strikePrices):
+                optionType = None
+                if idx % 2 == 0:
+                    optionType = "CE"
+                else:
+                    optionType = "PE"
+                stock_id = f"{self.stockName}{day}{month}{yearStripped}{strikePrice}{optionType}.{symbol}"
+                
+                
     def ironCondorAlgorithm(self):
         weeklyData_tup = weeklyData.createWeeklyData(self.stockName)
         wd = weeklyData_tup[0]
@@ -23,8 +81,8 @@ class IronCondor:
 
         df = pd.DataFrame(columns=[
             "OptionType", 
-            "Date", #
-            "Expiry",# 
+            "WeekBeginDate", #
+            "WeekExpiry",# 
             "EntryDate", #
             "EntryTime",#
             "ExitDate", #
@@ -35,22 +93,24 @@ class IronCondor:
             "ExitPrice", 
             "Profit", #
             "Sum", #
-            "Cumulative"
+            "Cumulative",
         ])
         for idx, data in wd.iterrows():
+            weekBegin = weeks[idx][0]['Date']
+            weekExpiry = weeks[idx][-1]['Date']
             #set entry date
-            entryDate = self.setEntryDate(weeks[idx], self.entryDay)
-       
+            entryDate = self.calcEntryDate(weeks[idx], self.entryDay)
             #set exit date
-            exitDate = self.setExitDate(weeks[idx], self.exitDay)
-            break
-            # stocks = []
-            # ce1 = data['CE1']
-            # pe1 = data['PE1']
-            # ce2 = data['CE2']
-            # pe2 = data['PE2']
-            # get entry prices based on stockname, date, optiontype
-            break
-
-ic = IronCondor("NIFTY", "FRIDAY", datetime.time(0,0,0), "WEDNESDAY", datetime.time(0,0,0,0))
+            exitDate = self.calcExitDate(weeks[idx], self.exitDay)
+            entryTime = self.calcEntryTime()
+            exitTime = self.calcExitTime()
+            #load strike prices
+            ce1 = data['CE1']
+            pe1 = data['PE1']
+            ce2 = data['CE2']
+            pe2 = data['PE2']
+            self.loadPrices([entryDate, exitDate], [ce1, pe1, ce2, pe2])
+            #get entry prices based on stockname, date, optiontype
+            
+ic = IronCondor("NIFTY", "WEDNESDAY", datetime.time(0,0,0), "THURSDAY", datetime.time(0,0,0,0))
 ic.ironCondorAlgorithm()
