@@ -30,7 +30,15 @@ weekDaysList = [
     "WEDNESDAY",
     "THURSDAY",
 ]
-
+weekDaysListNormal = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday"
+]
 def roundUp(number, base):
     return base * math.ceil(number / base)
 
