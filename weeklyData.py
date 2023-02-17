@@ -47,13 +47,16 @@ def createWeeklyData(stock):
         w_high = week[0]["High"]
         w_low = week[0]["Low"]
         w_open = week[0]["Open"]
+        w_close = week[-1]["Close"] 
+        #set close to current week's end day's close
+        #w_close = week[i][-1]["Close"]
         #set close to next week's first day's close
-        if i == len(weeks) - 1:
-            #set to current week's last day's close
-            w_close = weeks[i][-1]["Close"]
-        else:
-            #set to next week's first day's close
-            w_close = weeks[i + 1][0]["Close"]
+        # if i == len(weeks) - 1:
+        #     #set to current week's last day's close
+        #     w_close = weeks[i][-1]["Close"]
+        # else:
+        #     #set to next week's first day's close
+        #     w_close = weeks[i + 1][0]["Close"]
         w_fdate = week[0]["Date"]
         w_fday = week[0]["Day"]
         w_ldate = week[-1]["Date"]
@@ -89,6 +92,8 @@ def createWeeklyData(stock):
         #round the constant to nearest roundbase
         constant = helper.roundDown(constant, roundBase)
         #set ce,pe and round it
+
+
         ce1 = val + constant
         pe1 = val - constant
         ce2 = ce1 + constant
@@ -107,6 +112,6 @@ def createWeeklyData(stock):
     week_df['PE1'] = pe1Temp
     week_df['CE2'] = ce2Temp
     week_df['PE2'] = pe2Temp
-    print(week_df)
-    exit()
     return (week_df, weeks)
+
+

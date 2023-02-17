@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import helper
 import os
+
 class IronCondor:
     defaultExitTime = datetime.time(15, 14, 59)
     defaultEntryTime = datetime.time(15, 14, 59)
@@ -114,6 +115,6 @@ class IronCondor:
             pe2 = data['PE2']
             self.loadPrices([entryDate, exitDate], [ce1, pe1, ce2, pe2])
             #get entry prices based on stockname, date, optiontype
-            input()
-ic = IronCondor("NIFTY", "WEDNESDAY", datetime.time(0,0,0), "THURSDAY", datetime.time(0,0,0,0))
+            break
+ic = IronCondor("NIFTY", None, datetime.time(0,0,0), None, datetime.time(0,0,0,0))
 ic.ironCondorAlgorithm()
