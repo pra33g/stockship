@@ -92,8 +92,14 @@ def createWeeklyData(stock):
         #round the constant to nearest roundbase
         constant = helper.roundDown(constant, roundBase)
         #set ce,pe and round it
-
-
+        val = weeks[i][0]["Close"]
+        # if i == len(weeks) - 1:
+        #     #set to current week's last day's close
+        #     val = weeks[i][-1]["Close"]
+        # else:
+        #     #set to next week's first day's close
+        #     val = weeks[i + 1][0]["Close"]
+ 
         ce1 = val + constant
         pe1 = val - constant
         ce2 = ce1 + constant
@@ -115,3 +121,4 @@ def createWeeklyData(stock):
     return (week_df, weeks)
 
 
+#createWeeklyData("NIFTY")
