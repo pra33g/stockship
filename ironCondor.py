@@ -112,20 +112,21 @@ class IronCondor:
                     Time = self.entryTime
                     debugInfo[1] = Time
                     for ticker in tickers:
-                        entryPrices.append(df[(df["Ticker"] == ticker) & (df["Time"] == str(Time))]['Close'].values[0])
                         debugInfo[2] = ticker
+                        entryPrices.append(df[(df["Ticker"] == ticker) & (df["Time"] == str(Time))]['Close'].values[0])
                 elif i == dateIdEnum.EXIT:
                     debugInfo[0] = "Exit"
                     Time = self.exitTime
                     debugInfo[1] = Time
 
                     for ticker in tickers:
-                        exitPrices.append(df[(df["Ticker"] == ticker) & (df["Time"] == str(Time))]['Close'].values[0])
                         debugInfo[2] = ticker
+                        exitPrices.append(df[(df["Ticker"] == ticker) & (df["Time"] == str(Time))]['Close'].values[0])
 
             except Exception as e:
                 #traceback.print_exc()
-                print("Error:",[i, debugInfo, filePath])
+                #err in NIFTY11AUG2216850PE.NFO 15:14:59 doesnt exist
+                print("Error:",[debugInfo, filePath])
             
         return [entryPrices, exitPrices, tickers]
     def calcSpread(entryPrices):
