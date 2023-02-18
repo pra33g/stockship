@@ -6,6 +6,13 @@ import os
 import traceback
 from collections import namedtuple
 from enum import IntEnum
+from termcolor import colored
+
+from sys import platform
+
+if platform == "win32":
+    os.system('color')
+
 class OptionsEnum(IntEnum):
     CE1 = 0
     PE1 = 1
@@ -35,6 +42,14 @@ class IronCondor:
                 if curDayIndex >= prefDayIndex:
                     ret = day
                     break
+            if ret is None:
+                day_arr = []
+                for day in week:
+                    day_arr.append(wdli(day['Day']))
+                if prefDayIndex < day_arr[0]:
+                    ret = week[0]
+                else:
+                    ret = week[-1]
         return ret.Date.date()
     def calcExitDate(self, week, prefDay):
         ret = None
@@ -49,7 +64,14 @@ class IronCondor:
                 if curDayIndex <= prefDayIndex:
                     ret = day
             if ret is None:
-                ret = week[0]
+                day_arr = []
+                for day in week:
+                    day_arr.append(wdli(day['Day']))
+                if prefDayIndex < day_arr[0]:
+                    ret = week[0]
+                else:
+                    ret = week[-1]
+            
         return ret.Date.date()
     def calcEntryTime(self):
         if self.entryTime is None:
@@ -103,7 +125,11 @@ class IronCondor:
             month_dir = f"{dd.month}_{dd.year}"
             fileName = f"{fileNamePrefix}{symbol}_OPTIONS_{dd.day}{dd.monthNum}{dd.year}.{extension}"
             filePath = os.path.join(data_dir, month_dir, fileName)
-            df = pd.read_csv(filePath)
+            try:
+                df = pd.read_csv(filePath)
+            except:
+                raise
+            
             Time = None
             try:
                 debugInfo = [None, None, None]
@@ -126,7 +152,10 @@ class IronCondor:
             except Exception as e:
                 #traceback.print_exc()
                 #err in NIFTY11AUG2216850PE.NFO 15:14:59 doesnt exist
-                print("Error:",[debugInfo, filePath])
+                #print(e)
+                dbgInfo = f"Fail: Entry for [ticker:{debugInfo[2]},time:{debugInfo[1]}] does not exist in {filePath}" 
+                print(colored(dbgInfo, "red", "on_white"))
+                print(colored("Skipping entry.", "green"))
             
         return [entryPrices, exitPrices, tickers]
     def calcSpread(entryPrices):
@@ -164,17 +193,22 @@ class IronCondor:
         ])
 
         for idx, data in wd.iterrows():
-            print(idx)
+            progress = '{:.2f}'.format(100 * idx/len(wd))
+            print(f"Progress: {progress}", end="\r")
             weekBegin = weeks[idx][0]['Date'].date()
             weekExpiry = weeks[idx][-1]['Date'].date()
-            #set entry date
-            entryDate = self.calcEntryDate(weeks[idx], self.entryDay)
-            #set exit date
-            exitDate = self.calcExitDate(weeks[idx], self.exitDay)
-            entryTime = self.calcEntryTime()
-            exitTime = self.calcExitTime()
-            #load strike prices
-
+            try:
+                #set entry date
+                entryDate = self.calcEntryDate(weeks[idx], self.entryDay)
+                #set exit date
+                exitDate = self.calcExitDate(weeks[idx], self.exitDay)
+                entryTime = self.calcEntryTime()
+                exitTime = self.calcExitTime()
+            except Exception as e:
+                print(e)
+                dbgInfo = f"Fail: Perhaps day {self.entryDay or self.exitDay} not in week #{idx}"
+                print(colored(dbgInfo, "red", "on_white"))
+                print(pd.DataFrame(weeks[idx]))
             optionStrikePrices = [
                 data['CE1'],
                 data['PE1'],
@@ -182,12 +216,13 @@ class IronCondor:
                 data['PE2'],
             ]
             #get prices based on stockname, date, optiontype
-            [entryPrices, exitPrices, tickers] = self.loadPrices([entryDate, exitDate], optionStrikePrices)
-            #calculate spread
-            spread = IronCondor.calcSpread(entryPrices)
-            oe = IronCondor.oe
-            cumulative = 0
             try:
+                [entryPrices, exitPrices, tickers] = self.loadPrices([entryDate, exitDate], optionStrikePrices)
+                #calculate spread
+                #spread = IronCondor.calcSpread(entryPrices)
+                oe = IronCondor.oe
+                cumulative = 0
+            
                 #add first row of four
                 data = [
                     weekBegin,
@@ -232,15 +267,24 @@ class IronCondor:
                     None, None, None, None, None, None, None, None, None, None,
                     tickers[oe.PE2],
                     entryPrices[oe.PE2],
-                    None,
+                    IronCondor.calcSpread(entryPrices),
                     exitPrices[oe.PE2],
                     None, None, None,
                 ]
                 df.loc[len(df)] = data
+            except IndexError as ie:
+                #print(ie)
+                print(colored(f"Week: #{idx}", "light_red"))
             except Exception as e:
                 print(e)
-                print("Error: ", idx)
+                dbgInfo = "Fail: Week#"+ str(idx)
+                print(colored(dbgInfo, "red"))
             
-        df.to_csv("ironCondorAlgo.csv", index=False)
-ic = IronCondor("NIFTY", None, None, None, None)
+        outputFile = "ironCondorAlgo.csv"
+        df.to_csv(outputFile, index=False)
+        dbgInfo = "Generated " + outputFile
+        print(colored(dbgInfo, "white", "on_light_blue"))
+
+
+ic = IronCondor("NIFTY", "THURSDAY", datetime.time(9,59,59), "THURSDAY", datetime.time(15,14,59))
 ic.ironCondorAlgorithm()
