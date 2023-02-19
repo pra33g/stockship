@@ -20,6 +20,7 @@ class OptionsEnum(IntEnum):
     PE2 = 3
 class IronCondor:
     oe = OptionsEnum
+    slotSize = 50
     defaultExitTime = datetime.time(15, 14, 59)
     defaultEntryTime = datetime.time(15, 14, 59)
     outputFileName = None
@@ -170,6 +171,13 @@ class IronCondor:
                     +entryPrices[oe.PE2]
                 )
             )
+    def calcProfit(entryPrice, exitPrice, sell):
+        if sell is True:
+            pass
+        else:
+            pass
+    def addRowDF(df, data):
+        pass
     def ironCondorAlgorithm(self):
         weeklyData_tup = weeklyData.createWeeklyData(self.stockName)
         wd = weeklyData_tup[0]
@@ -182,13 +190,13 @@ class IronCondor:
             "EntryDate", #
             "EntryDay",#
             "EntryTime",#
-            "ExitDate", #
+            "ExitDate",#
             "ExitDay",#
             "ExitTime",#
             "Ticker",
             "EntryPrice",
             "Spread", #
-            "ExitPrice", 
+            "ExitPrice",
             "Profit", #
             "Sum", #
             "Cumulative",
