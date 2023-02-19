@@ -22,12 +22,14 @@ class IronCondor:
     oe = OptionsEnum
     defaultExitTime = datetime.time(15, 14, 59)
     defaultEntryTime = datetime.time(15, 14, 59)
-    def __init__(self, stockName, entryDay = None, entryTime = None, exitDay = None, exitTime = None):
+    outputFileName = None
+    def __init__(self, stockName, outputFileName = "ironCondorAlgorithm.csv",  entryDay = None, entryTime = None, exitDay = None, exitTime = None):
         self.stockName = stockName
         self.entryDay = entryDay
         self.entryTime = entryTime
         self.exitDay = exitDay
         self.exitTime = exitTime
+        IronCondor.outputFileName = outputFileName
 
     def calcEntryDate(self, week, prefDay):
         ret = None
@@ -280,11 +282,6 @@ class IronCondor:
                 dbgInfo = "Fail: Week#"+ str(idx)
                 print(colored(dbgInfo, "red"))
             
-        outputFile = "ironCondorAlgo.csv"
-        df.to_csv(outputFile, index=False)
-        dbgInfo = "Generated " + outputFile
+        df.to_csv(IronCondor.outputFileName, index=False)
+        dbgInfo = "Generated " + IronCondor.outputFileName
         print(colored(dbgInfo, "white", "on_light_blue"))
-
-
-ic = IronCondor("NIFTY", "THURSDAY", datetime.time(9,59,59), "THURSDAY", datetime.time(15,14,59))
-ic.ironCondorAlgorithm()
