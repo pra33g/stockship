@@ -215,7 +215,25 @@ class IronCondor:
              ret.append((10/10000000)*(entryPrices[i]+exitPrices[i])*50)
         return ret
 
-
+    def calcGST(sebi, tc):
+        ret = []
+        oe = IronCondor.oe
+        for i in range(0, oe.PE2 + 1):
+            sebi[i] + tc[i] + IronCondor.brokerage
+        return ret
+    def calcStampCharges(entryPrices, exitPrices):
+        ret = []
+        oe = IronCondor.oe
+        for i in range(0, oe.PE2 + 1):
+            if i < oe.CE2: #sell
+                ret.append(
+                    exitPrices[i] * 0.003 * 0.01
+                )
+            else: #buy
+                ret.append(
+                    entryPrices[i] * 0.003 * 0.01
+                )
+        return ret
     def addRowDF(df, data):
         pass
 
@@ -272,10 +290,14 @@ class IronCondor:
                 [entryPrices, exitPrices, tickers] = self.loadPrices([entryDate, exitDate], optionStrikePrices)
                 #calculate the profits
                 profits = self.calcProfits(exitPrices, entryPrices)
-                weekProfitNet = sum(profits) #sum column
+                weekProfitNet = sum(profits) #sum column in weekly
                 sctt = self.calcSctt(exitPrices, entryPrices)
                 tc = IronCondor.calcTC(exitPrices, entryPrices)
                 sebi = IronCondor.calcSEBI(exitPrices, entryPrices)
+                gst = IronCondor.calcGST(sebi, tc)
+                stamp = IronCondor.calcStampCharges(entryPrices, exitPrices)
+                
+
                 print(sebi)
                 
                 input()
