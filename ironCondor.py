@@ -200,8 +200,25 @@ class IronCondor:
                     exitPrices[i] * 50 * 0.05 * 0.01
                 )
         return ret
+
+    def calcTC(exitPrices, entryPrices):
+        ret = []
+        oe = IronCondor.oe
+        for i in range(0, oe.PE2 + 1):
+            ret.append(50 * 0.053 * 0.01 * (exitPrices[i] + entryPrices[i]))
+        return ret        
+
+    def calcSEBI(exitPrices, entryPrices):
+        ret = []
+        oe = IronCondor.oe
+        for i in range(0, oe.PE2 + 1):
+             ret.append((10/10000000)*(entryPrices[i]+exitPrices[i])*50)
+        return ret
+
+
     def addRowDF(df, data):
         pass
+
     def ironCondorAlgorithm(self):
         weeklyData_tup = weeklyData.createWeeklyData(self.stockName)
         wd = weeklyData_tup[0]
@@ -256,8 +273,10 @@ class IronCondor:
                 #calculate the profits
                 profits = self.calcProfits(exitPrices, entryPrices)
                 weekProfitNet = sum(profits) #sum column
-                sctt = self.calcSctt(exitPrices, entryPrices) 
-                print(sctt)
+                sctt = self.calcSctt(exitPrices, entryPrices)
+                tc = IronCondor.calcTC(exitPrices, entryPrices)
+                sebi = IronCondor.calcSEBI(exitPrices, entryPrices)
+                print(sebi)
                 
                 input()
 
