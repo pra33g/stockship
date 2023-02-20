@@ -234,6 +234,14 @@ class IronCondor:
                     entryPrices[i] * 0.003 * 0.01
                 )
         return ret
+    def calcTotalCost(sctt, tc, sebi, gst, stamp):
+        ret = []
+        oe = IronCondor.oe
+        for i in range(0, oe.PE2 + 1):
+                ret.append(
+                    sctt[i] + tc[i] + sebi[i] + gst[i] + stamp[i]
+                )
+        return ret
     def addRowDF(df, data):
         pass
 
@@ -296,7 +304,7 @@ class IronCondor:
                 sebi = IronCondor.calcSEBI(exitPrices, entryPrices)
                 gst = IronCondor.calcGST(sebi, tc)
                 stamp = IronCondor.calcStampCharges(entryPrices, exitPrices)
-                
+                totalCost = IronCondor.calcTotalCost(sctt, tc, sebi, gst, stamp)
 
                 print(sebi)
                 
