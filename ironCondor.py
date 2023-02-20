@@ -24,6 +24,7 @@ class IronCondor:
     defaultExitTime = datetime.time(15, 14, 59)
     defaultEntryTime = datetime.time(15, 14, 59)
     outputFileName = None
+    brokerage = 20 * 2
     def __init__(self, stockName, outputFileName = "ironCondorAlgorithm.csv",  entryDay = None, entryTime = None, exitDay = None, exitTime = None):
         self.stockName = stockName
         self.entryDay = entryDay
@@ -171,12 +172,34 @@ class IronCondor:
                     +entryPrices[oe.PE2]
                 )
             )
-    def calcProfit(self, exitPrice, entryPrice, sell):
+    def _calcProfit(exitPrice, entryPrice, sell):
         net = exitPrice - entryPrice
         net = net * IronCondor.slotSize
         if sell is True:
             net = net * - 1
         return net
+    def calcProfits(self, exitPrices, entryPrices):
+        ret = []
+        oe = IronCondor.oe
+        for i in range(0, oe.PE2 + 1):
+            if i < oe.CE2: #sell
+                ret.append(IronCondor._calcProfit(exitPrices[i], entryPrices[i], True))
+            else: #buy
+                ret.append(IronCondor._calcProfit(exitPrices[i], entryPrices[i], False))
+        return ret
+    def calcSctt(self, exitPrices, entryPrices):
+        ret = []
+        oe = IronCondor.oe
+        for i in range(0, oe.PE2 + 1):
+            if i < oe.CE2: #sell
+                ret.append(
+                    entryPrices[i] * 50 * 0.05 * 0.01
+                )
+            else: #buy
+                ret.append(
+                    exitPrices[i] * 50 * 0.05 * 0.01
+                )
+        return ret
     def addRowDF(df, data):
         pass
     def ironCondorAlgorithm(self):
@@ -228,12 +251,18 @@ class IronCondor:
             ]
             #get prices based on stockname, date, optiontype
             try:
-                [entryPrices, exitPrices, tickers] = self.loadPrices([entryDate, exitDate], optionStrikePrices)
-                #calculate spread
-                #spread = IronCondor.calcSpread(entryPrices)
                 oe = IronCondor.oe
-                cumulative = 0
-            
+                [entryPrices, exitPrices, tickers] = self.loadPrices([entryDate, exitDate], optionStrikePrices)
+                #calculate the profits
+                profits = self.calcProfits(exitPrices, entryPrices)
+                weekProfitNet = sum(profits) #sum column
+                sctt = self.calcSctt(exitPrices, entryPrices) 
+                print(sctt)
+                
+                input()
+
+
+                
                 #add first row of four
                 data = [
                     weekBegin,
@@ -250,7 +279,7 @@ class IronCondor:
                     entryPrices[oe.CE1],
                     None,
                     exitPrices[oe.CE1],
-                    self.calcProfit(exitPrices[oe.CE1], entryPrices[oe.CE1], sell=True),
+                    profits[oe.CE1],
                     None, None,
                 ]
                 df.loc[len(df)] = data
@@ -261,7 +290,7 @@ class IronCondor:
                     entryPrices[oe.PE1],
                     None,
                     exitPrices[oe.PE1],
-                    self.calcProfit(exitPrices[oe.PE1], entryPrices[oe.PE1], sell=True),                  
+                    profits[oe.PE1],
                     None, None,
                 ]
                 df.loc[len(df)] = data
@@ -272,7 +301,7 @@ class IronCondor:
                     entryPrices[oe.CE2],
                     None,
                     exitPrices[oe.CE2],
-                    self.calcProfit(exitPrices[oe.CE2], entryPrices[oe.CE2], sell=False),                   
+                    profits[oe.CE2],
                     None, None,
                 ]
                 df.loc[len(df)] = data
@@ -283,7 +312,7 @@ class IronCondor:
                     entryPrices[oe.PE2],
                     IronCondor.calcSpread(entryPrices),
                     exitPrices[oe.PE2],
-                    self.calcProfit(exitPrices[oe.PE2], entryPrices[oe.PE2], sell=False),
+                    profits[oe.PE2],
                     None, None,
                 ]
                 df.loc[len(df)] = data
