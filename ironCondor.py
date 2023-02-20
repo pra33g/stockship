@@ -156,9 +156,9 @@ class IronCondor:
                 #traceback.print_exc()
                 #err in NIFTY11AUG2216850PE.NFO 15:14:59 doesnt exist
                 #print(e)
-                dbgInfo = f"Fail: Entry for [ticker:{debugInfo[2]},time:{debugInfo[1]}] does not exist in {filePath}" 
-                print(colored(dbgInfo, "red", "on_white"))
-                print(colored("Skipping entry.", "green"))
+                dbgInfo = f"Fail: [{debugInfo[2]},{debugInfo[1]}] does not exist in {filePath}" 
+                print(colored(dbgInfo, "red"))
+                print(colored("Skipping", "green"))
             
         return [entryPrices, exitPrices, tickers]
     def calcSpread(entryPrices):
@@ -171,11 +171,12 @@ class IronCondor:
                     +entryPrices[oe.PE2]
                 )
             )
-    def calcProfit(entryPrice, exitPrice, sell):
+    def calcProfit(self, exitPrice, entryPrice, sell):
+        net = exitPrice - entryPrice
+        net = net * IronCondor.slotSize
         if sell is True:
-            pass
-        else:
-            pass
+            net = net * - 1
+        return net
     def addRowDF(df, data):
         pass
     def ironCondorAlgorithm(self):
@@ -249,7 +250,8 @@ class IronCondor:
                     entryPrices[oe.CE1],
                     None,
                     exitPrices[oe.CE1],
-                    None, None, None,
+                    self.calcProfit(exitPrices[oe.CE1], entryPrices[oe.CE1], sell=True),
+                    None, None,
                 ]
                 df.loc[len(df)] = data
                 #second row
@@ -259,7 +261,8 @@ class IronCondor:
                     entryPrices[oe.PE1],
                     None,
                     exitPrices[oe.PE1],
-                    None, None, None,
+                    self.calcProfit(exitPrices[oe.PE1], entryPrices[oe.PE1], sell=True),                  
+                    None, None,
                 ]
                 df.loc[len(df)] = data
                 #third row
@@ -269,7 +272,8 @@ class IronCondor:
                     entryPrices[oe.CE2],
                     None,
                     exitPrices[oe.CE2],
-                    None, None, None,
+                    self.calcProfit(exitPrices[oe.CE2], entryPrices[oe.CE2], sell=False),                   
+                    None, None,
                 ]
                 df.loc[len(df)] = data
                 #fourth row
@@ -279,7 +283,8 @@ class IronCondor:
                     entryPrices[oe.PE2],
                     IronCondor.calcSpread(entryPrices),
                     exitPrices[oe.PE2],
-                    None, None, None,
+                    self.calcProfit(exitPrices[oe.PE2], entryPrices[oe.PE2], sell=False),
+                    None, None,
                 ]
                 df.loc[len(df)] = data
             except IndexError as ie:
@@ -287,7 +292,7 @@ class IronCondor:
                 print(colored(f"Week: #{idx}", "light_red"))
             except Exception as e:
                 print(e)
-                dbgInfo = "Fail: Week#"+ str(idx)
+                dbgInfo = "Fail (Probably value missing): Week#"+ str(idx)
                 print(colored(dbgInfo, "red"))
             
         df.to_csv(IronCondor.outputFileName, index=False)
