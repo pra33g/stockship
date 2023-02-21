@@ -219,7 +219,7 @@ class IronCondor:
         ret = []
         oe = IronCondor.oe
         for i in range(0, oe.PE2 + 1):
-            sebi[i] + tc[i] + IronCondor.brokerage
+            ret.append((sebi[i] + tc[i] + IronCondor.brokerage) * 18 * 0.01 )
         return ret
     def calcStampCharges(entryPrices, exitPrices):
         ret = []
@@ -324,13 +324,9 @@ class IronCondor:
                 stamp = IronCondor.calcStampCharges(entryPrices, exitPrices)
                 totalCost = IronCondor.calcTotalCost(sctt, tc, sebi, gst, stamp)
                 netProfits = IronCondor.calcNetProfits(profits, totalCost)
-                print(sebi)
-                
-                input()
 
-
-                
                 #add first row of four
+                entry = oe.CE1
                 data = [
                     weekBegin,
                     wd.loc[idx]['FirstDay'],
@@ -342,45 +338,86 @@ class IronCondor:
                     exitDate,
                     helper.weekDaysListNormal[exitDate.weekday()],
                     self.exitTime,
-                    tickers[oe.CE1],
-                    entryPrices[oe.CE1],
+                    tickers[entry],
+                    entryPrices[entry],
                     None,
-                    exitPrices[oe.CE1],
-                    profits[oe.CE1],
-                    None, None,
+                    exitPrices[entry],
+                    profits[entry],
+                    None, #week profit net only to be printed in PE2
+                    None, #cumulative weekly
+                    sctt[entry],
+                    tc[entry],
+                    sebi[entry],
+                    gst[entry],
+                    stamp[entry],
+                    totalCost[entry],
+                    netProfits[entry],
+                    None, #net cumulative
                 ]
                 df.loc[len(df)] = data
                 #second row
+                entry = oe.PE1
                 data = [
                     None, None, None, None, None, None, None, None, None, None,
-                    tickers[oe.PE1],
-                    entryPrices[oe.PE1],
+                    tickers[entry],
+                    entryPrices[entry],
                     None,
-                    exitPrices[oe.PE1],
-                    profits[oe.PE1],
-                    None, None,
+                    exitPrices[entry],
+                    profits[entry],
+                    None, #week profit net only to be printed in PE2
+                    None, #cumulative weekly
+                    sctt[entry],
+                    tc[entry],
+                    sebi[entry],
+                    gst[entry],
+                    stamp[entry],
+                    totalCost[entry],
+                    netProfits[entry],
+                    None, #net cumulative
+
                 ]
                 df.loc[len(df)] = data
                 #third row
+                entry = oe.CE2
                 data = [
                     None, None, None, None, None, None, None, None, None, None,
-                    tickers[oe.CE2],
-                    entryPrices[oe.CE2],
+                    tickers[entry],
+                    entryPrices[entry],
                     None,
-                    exitPrices[oe.CE2],
-                    profits[oe.CE2],
-                    None, None,
+                    exitPrices[entry],
+                    profits[entry],
+                    None, #week profit net only to be printed in PE2
+                    None, #cumulative weekly
+                    sctt[entry],
+                    tc[entry],
+                    sebi[entry],
+                    gst[entry],
+                    stamp[entry],
+                    totalCost[entry],
+                    netProfits[entry],
+                    None, #net cumulative
+
                 ]
                 df.loc[len(df)] = data
                 #fourth row
+                entry = oe.PE2
                 data = [
                     None, None, None, None, None, None, None, None, None, None,
-                    tickers[oe.PE2],
-                    entryPrices[oe.PE2],
+                    tickers[entry],
+                    entryPrices[entry],
                     IronCondor.calcSpread(entryPrices),
-                    exitPrices[oe.PE2],
-                    profits[oe.PE2],
-                    None, None,
+                    exitPrices[entry],
+                    profits[entry],
+                    weekProfitNet,
+                    None, #cumulative weekly
+                    sctt[entry],
+                    tc[entry],
+                    sebi[entry],
+                    gst[entry],
+                    stamp[entry],
+                    totalCost[entry],
+                    netProfits[entry],
+                    None, #net cumulative
                 ]
                 df.loc[len(df)] = data
             except IndexError as ie:
