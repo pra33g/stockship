@@ -242,6 +242,16 @@ class IronCondor:
                     sctt[i] + tc[i] + sebi[i] + gst[i] + stamp[i]
                 )
         return ret
+
+    def calcNetProfits(profits, totalCost):
+        ret = []
+        oe = IronCondor.oe
+        for i in range(0, oe.PE2 + 1):
+            ret.append(
+                profits[i] - (IronCondor.brokerage + totalCost[i])
+            )
+        return ret
+
     def addRowDF(df, data):
         pass
 
@@ -266,7 +276,15 @@ class IronCondor:
             "ExitPrice",
             "Profit", #
             "Sum", #
-            "Cumulative",
+            "WeekCumulative",
+            "SCTT",
+            "TC",
+            "SEBI",
+            "GST",
+            "Stamp",
+            "TotalCost",
+            "NetProf.",
+            "NetCumulative",
         ])
 
         for idx, data in wd.iterrows():
@@ -305,7 +323,7 @@ class IronCondor:
                 gst = IronCondor.calcGST(sebi, tc)
                 stamp = IronCondor.calcStampCharges(entryPrices, exitPrices)
                 totalCost = IronCondor.calcTotalCost(sctt, tc, sebi, gst, stamp)
-
+                netProfits = IronCondor.calcNetProfits(profits, totalCost)
                 print(sebi)
                 
                 input()
