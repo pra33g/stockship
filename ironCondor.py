@@ -283,7 +283,7 @@ class IronCondor:
             "GST",
             "Stamp",
             "TotalCost",
-            "NetProf.",
+            "NetProfit",
             "NetCumulative",
         ])
 
@@ -428,6 +428,23 @@ class IronCondor:
                 dbgInfo = "Fail (Probably value missing): Week#"+ str(idx)
                 print(colored(dbgInfo, "red"))
             
+        #set weekly sum cumulative
+        weekCumulative = []
+        adder = 0
+        profit = df['Profit']
+        for idx, p in enumerate(profit):
+            adder += p
+            weekCumulative.append(adder)
+        df['WeekCumulative'] = weekCumulative
+        #set total cumulateive
+        netCumulative = []
+        netProfit = df['NetProfit']
+        adder = 0
+        for p in netProfit:
+            adder += p
+            netCumulative.append(adder)
+        df['NetCumulative'] = netCumulative
+        #write df to file
         df.to_csv(IronCondor.outputFileName, index=False)
         dbgInfo = "Generated " + IronCondor.outputFileName
         print(colored(dbgInfo, "white", "on_light_blue"))
