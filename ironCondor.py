@@ -87,6 +87,26 @@ class IronCondor:
             self.exitTime = IronCondor.defaultExitTime
         return self.exitTime
 
+    def selectPriceFromDF(df, ticker, time):
+        select = None
+        #time to reduce each iter
+        td = datetime.time(0,0,1)
+        while True:
+            selectTicker = df[(df["Ticker"] == ticker)]
+            if selectTicker.empty:
+                raise
+            
+            selectTime = selectTicker[(selectTicker["Time"] == str(time))]
+            select = selectTime['Close']
+
+            if len(select.values) == 0:
+                oldTime = time
+                time = datetime.datetime.combine(datetime.date.min, time) - datetime.datetime.combine(datetime.date.min, td)
+                time = (datetime.datetime.min + time).time()
+                print(f"{oldTime} for {ticker} not found. using:{str(time)}", end="\r")
+            else:
+                break
+        return select.values[0]
     def loadPrices(self, dates, strikePrices):
         symbol = "NFO"
         #day, yearstripped, year, month, monthnum, year
@@ -129,13 +149,9 @@ class IronCondor:
             month_dir = f"{dd.month}_{dd.year}"
             fileName = f"{fileNamePrefix}{symbol}_OPTIONS_{dd.day}{dd.monthNum}{dd.year}.{extension}"
             filePath = os.path.join(data_dir, month_dir, fileName)
-            try:
-                df = pd.read_csv(filePath)
-            except:
-                raise
-            
             Time = None
             try:
+                df = pd.read_csv(filePath)
                 debugInfo = [None, None, None]
                 if i == dateIdEnum.ENTRY:
                     debugInfo[0] = "Entry"
@@ -143,21 +159,23 @@ class IronCondor:
                     debugInfo[1] = Time
                     for ticker in tickers:
                         debugInfo[2] = ticker
-                        entryPrices.append(df[(df["Ticker"] == ticker) & (df["Time"] == str(Time))]['Close'].values[0])
+                        price = IronCondor.selectPriceFromDF(df, ticker, Time)
+                        entryPrices.append(price)
                 elif i == dateIdEnum.EXIT:
                     debugInfo[0] = "Exit"
                     Time = self.exitTime
                     debugInfo[1] = Time
 
                     for ticker in tickers:
-                        debugInfo[2] = ticker
-                        exitPrices.append(df[(df["Ticker"] == ticker) & (df["Time"] == str(Time))]['Close'].values[0])
+                        debugInfo[2] = ticker 
+                        price = IronCondor.selectPriceFromDF(df, ticker, Time)
+                        exitPrices.append(price)
 
             except Exception as e:
                 #traceback.print_exc()
                 #err in NIFTY11AUG2216850PE.NFO 15:14:59 doesnt exist
-                #print(e)
-                dbgInfo = f"Fail: [{debugInfo[2]},{debugInfo[1]}] does not exist in {filePath}" 
+                print(e)
+                dbgInfo = f"Fail: {debugInfo[0]} [{debugInfo[2]},{debugInfo[1]}] does not exist in {filePath}" 
                 print(colored(dbgInfo, "red"))
                 print(colored("Skipping", "green"))
             
@@ -425,9 +443,10 @@ class IronCondor:
                 print(colored(f"Week: #{idx}", "light_red"))
             except Exception as e:
                 print(e)
+                traceback.print_exception(e)
                 dbgInfo = "Fail (Probably value missing): Week#"+ str(idx)
                 print(colored(dbgInfo, "red"))
-            
+
         #set weekly sum cumulative
         weekCumulative = []
         adder = 0
