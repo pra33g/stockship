@@ -7,7 +7,7 @@ import traceback
 from collections import namedtuple
 from enum import IntEnum
 from termcolor import colored
-
+import math
 from sys import platform
 
 if platform == "win32":
@@ -89,6 +89,7 @@ class IronCondor:
 
     def selectPriceFromDF(df, ticker, time):
         select = None
+        
         #time to reduce each iter
         td = datetime.time(0,0,1)
         while True:
@@ -273,7 +274,27 @@ class IronCondor:
     def addRowDF(df, data):
         pass
 
+    def calcDrawDown(sumCol):
+        drawdown = []
+        dd_val = 0
+        for i, val in enumerate(sumCol):
+            if pd.isna(val):
+                drawdown.append(math.nan)
+            else:
+                dd_val += val
+                if dd_val >= 0:
+                    dd_val = 0
+                drawdown.append(dd_val)
+
+        return drawdown
+                    
+                
+    def testEntry():
+        df = pd.read_csv("ic-backtest.csv", parse_dates=["WeekBeginDate"])
+        dd = IronCondor.calcDrawDown(df['Sum'])
+        exit()
     def ironCondorAlgorithm(self):
+        # IronCondor.testEntry()
         weeklyData_tup = weeklyData.createWeeklyData(self.stockName)
         wd = weeklyData_tup[0]
         weeks = weeklyData_tup[1]
@@ -463,6 +484,10 @@ class IronCondor:
             adder += p
             netCumulative.append(adder)
         df['NetCumulative'] = netCumulative
+        #calculate weekly drawdown
+        drawDown = IronCondor.calcDrawDown(df['Sum'])
+        df['Drawdown'] = drawDown
+        
         #write df to file
         df.to_csv(IronCondor.outputFileName, index=False)
         dbgInfo = "Generated " + IronCondor.outputFileName
