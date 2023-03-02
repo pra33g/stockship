@@ -23,6 +23,7 @@ class IronCondor:
     slotSize = 50
     defaultExitTime = datetime.time(15, 14, 59)
     defaultEntryTime = datetime.time(15, 14, 59)
+    
     outputFileName = None
     brokerage = 20 * 2
     def __init__(self, stockName, outputFileName = "ironCondorAlgorithm.csv",  entryDay = None, entryTime = None, exitDay = None, exitTime = None):
@@ -31,8 +32,10 @@ class IronCondor:
         self.entryTime = entryTime
         self.exitDay = exitDay
         self.exitTime = exitTime
-        IronCondor.outputFileName = outputFileName
+        IronCondor.outputFileName = self.setOutputFilename()
 
+    def setOutputFilename(self):
+        return f"icbt[{self.entryDay}({self.entryTime})-{self.exitDay}({self.exitTime})].csv"
     def calcEntryDate(self, week, prefDay):
         ret = None
         if prefDay is None:
@@ -295,6 +298,8 @@ class IronCondor:
         exit()
     def ironCondorAlgorithm(self):
         # IronCondor.testEntry()
+        if os.path.exists(IronCondor.outputFileName):
+            return pd.read_csv(IronCondor.outputFileName)
         weeklyData_tup = weeklyData.createWeeklyData(self.stockName)
         wd = weeklyData_tup[0]
         weeks = weeklyData_tup[1]
@@ -492,3 +497,4 @@ class IronCondor:
         df.to_csv(IronCondor.outputFileName, index=False)
         dbgInfo = "Generated " + IronCondor.outputFileName
         print(colored(dbgInfo, "white", "on_light_blue"))
+        return df

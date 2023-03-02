@@ -5,9 +5,9 @@ from datetime import datetime, date, time, timedelta
 
 ##
 stock = "NIFTY"
-entry_day = None
+entry_day = "FRIDAY"
 entry_time = time(15, 14, 59)
-exit_day = None
+exit_day = "THURSDAY"
 exit_time = time(15,14,59)
 
 
