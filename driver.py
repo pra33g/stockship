@@ -1,6 +1,6 @@
 from ironCondor import IronCondor
 from datetime import datetime, date, time, timedelta
-
+import summary
 
 
 ##
@@ -12,8 +12,8 @@ exit_time = time(15,14,59)
 
 
 ic = IronCondor("NIFTY", "ic-backtest.csv", entry_day, entry_time , exit_day, exit_time)
-ic.ironCondorAlgorithm()
-
+data = ic.ironCondorAlgorithm()
+summary.createSummary(data)
 ####testing
 # tt = time(0,0,1)
 # for i in range(0, 5):
