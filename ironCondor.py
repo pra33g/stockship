@@ -92,25 +92,30 @@ class IronCondor:
 
     def selectPriceFromDF(df, ticker, time):
         select = None
-        
+        timecopy = time
         #time to reduce each iter
         td = datetime.time(0,0,1)
         while True:
             selectTicker = df[(df["Ticker"] == ticker)]
-            if selectTicker.empty:
-                raise
+            #if selectTicker.empty:
+            #    raise
             
-            selectTime = selectTicker[(selectTicker["Time"] == str(time))]
+            selectTime = selectTicker[(selectTicker["Time"] == str(timecopy))]
             select = selectTime['Close']
 
             if len(select.values) == 0:
-                oldTime = time
-                time = datetime.datetime.combine(datetime.date.min, time) - datetime.datetime.combine(datetime.date.min, td)
-                time = (datetime.datetime.min + time).time()
-                print(f"{oldTime} for {ticker} not found. using:{str(time)}", end="\r")
+                oldTime = timecopy
+                timecopy = datetime.datetime.combine(datetime.date.min, timecopy) - datetime.datetime.combine(datetime.date.min, td)
+                timecopy = (datetime.datetime.min + timecopy).time()
+                print(f"\t\t{oldTime} for {ticker} not found. using:{str(timecopy)}", end="\r")
+                input()
             else:
                 break
-        return select.values[0]
+        
+        return [select.values[0], timecopy]
+
+
+
     def loadPrices(self, dates, strikePrices):
         symbol = "NFO"
         #day, yearstripped, year, month, monthnum, year
@@ -149,6 +154,8 @@ class IronCondor:
         data_dir = f"{self.stockName}_OPTIONS_DATA"
         entryPrices = []
         exitPrices = []
+        selectedEntryTime = []
+        selectedExitTime = []
         for i, dd in enumerate(dateData):
             month_dir = f"{dd.month}_{dd.year}"
             fileName = f"{fileNamePrefix}{symbol}_OPTIONS_{dd.day}{dd.monthNum}{dd.year}.{extension}"
@@ -163,7 +170,8 @@ class IronCondor:
                     debugInfo[1] = Time
                     for ticker in tickers:
                         debugInfo[2] = ticker
-                        price = IronCondor.selectPriceFromDF(df, ticker, Time)
+                        [price, t] = IronCondor.selectPriceFromDF(df, ticker, Time)
+                        selectedEntryTime.append(t)
                         entryPrices.append(price)
                 elif i == dateIdEnum.EXIT:
                     debugInfo[0] = "Exit"
@@ -172,9 +180,9 @@ class IronCondor:
 
                     for ticker in tickers:
                         debugInfo[2] = ticker 
-                        price = IronCondor.selectPriceFromDF(df, ticker, Time)
+                        [price, t] = IronCondor.selectPriceFromDF(df, ticker, Time)
                         exitPrices.append(price)
-
+                        selectedExitTime.append(t)
             except Exception as e:
                 #traceback.print_exc()
                 #err in NIFTY11AUG2216850PE.NFO 15:14:59 doesnt exist
@@ -183,7 +191,7 @@ class IronCondor:
                 print(colored(dbgInfo, "red"))
                 print(colored("Skipping", "green"))
             
-        return [entryPrices, exitPrices, tickers]
+        return [entryPrices, exitPrices, tickers, selectedEntryTime, selectedExitTime]
     def calcSpread(entryPrices):
             oe = IronCondor.oe
             return (
@@ -299,7 +307,7 @@ class IronCondor:
     def ironCondorAlgorithm(self):
         # IronCondor.testEntry()
         if os.path.exists(IronCondor.outputFileName):
-            return pd.read_csv(IronCondor.outputFileName)
+            return [pd.read_csv(IronCondor.outputFileName), IronCondor.outputFileName]
         weeklyData_tup = weeklyData.createWeeklyData(self.stockName)
         wd = weeklyData_tup[0]
         weeks = weeklyData_tup[1]
@@ -333,7 +341,7 @@ class IronCondor:
 
         for idx, data in wd.iterrows():
             progress = '{:.2f}'.format(100 * idx/len(wd))
-            print(f"Progress: {progress}", end="\r")
+            print(f"Progress: {progress}", end="\n")
             weekBegin = weeks[idx][0]['Date'].date()
             weekExpiry = weeks[idx][-1]['Date'].date()
             try:
@@ -357,7 +365,7 @@ class IronCondor:
             #get prices based on stockname, date, optiontype
             try:
                 oe = IronCondor.oe
-                [entryPrices, exitPrices, tickers] = self.loadPrices([entryDate, exitDate], optionStrikePrices)
+                [entryPrices, exitPrices, tickers, entT, extT] = self.loadPrices([entryDate, exitDate], optionStrikePrices)
                 #calculate the profits
                 profits = self.calcProfits(exitPrices, entryPrices)
                 weekProfitNet = sum(profits) #sum column in weekly
@@ -378,10 +386,11 @@ class IronCondor:
                     wd.loc[idx]['LastDay'],
                     entryDate,
                     helper.weekDaysListNormal[entryDate.weekday()],
-                    self.entryTime,
+                    #self.entryTime,
+                    entT[entry], #7
                     exitDate,
                     helper.weekDaysListNormal[exitDate.weekday()],
-                    self.exitTime,
+                    extT[entry], #10
                     tickers[entry],
                     entryPrices[entry],
                     None,
@@ -402,7 +411,10 @@ class IronCondor:
                 #second row
                 entry = oe.PE1
                 data = [
-                    None, None, None, None, None, None, None, None, None, None,
+                    None, None, None, None, None, None,
+                    entT[entry],
+                    None, None,
+                    extT[entry],
                     tickers[entry],
                     entryPrices[entry],
                     None,
@@ -424,7 +436,10 @@ class IronCondor:
                 #third row
                 entry = oe.CE2
                 data = [
-                    None, None, None, None, None, None, None, None, None, None,
+                    None, None, None, None, None, None,
+                    entT[entry],
+                    None, None,
+                    extT[entry],
                     tickers[entry],
                     entryPrices[entry],
                     None,
@@ -446,7 +461,10 @@ class IronCondor:
                 #fourth row
                 entry = oe.PE2
                 data = [
-                    None, None, None, None, None, None, None, None, None, None,
+                    None, None, None, None, None, None,
+                    entT[entry],
+                    None, None,
+                    extT[entry],
                     tickers[entry],
                     entryPrices[entry],
                     IronCondor.calcSpread(entryPrices),
@@ -497,4 +515,4 @@ class IronCondor:
         df.to_csv(IronCondor.outputFileName, index=False)
         dbgInfo = "Generated " + IronCondor.outputFileName
         print(colored(dbgInfo, "white", "on_light_blue"))
-        return df
+        return [df, IronCondor.outputFileName]
