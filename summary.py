@@ -53,7 +53,7 @@ def minDrawdown(data):
         if not pd.isna(val) and val < ret:
             ret = val
     return ret
-def createSummary(data):
+def createSummary(data, fname):
     df = pd.DataFrame(columns=[
         "results",
         "con.wins",
@@ -92,9 +92,24 @@ def createSummary(data):
 
     actual_roi = totalreturn_percentage - (brokerage_cost * 100) - (slippage * 100) - (tax_cost * 100)
 
+
     
     print(actual_dd, actual_roi)
     print(actual_roi / actual_dd)
+
+    app = pd.DataFrame(columns=[
+        "bt",
+        "dd",
+        "roi",
+        "roi/dd"
+    ])
+    app.loc[len(app)] = [fname, actual_dd, actual_roi, (actual_roi/actual_dd)]
+    #write data to file
+    #results.csv must exist
+    #read df
+    df = pd.read_csv("results.csv")
+    final_df = pd.concat([df, app], ignore_index=True)
+    final_df.to_csv("results.csv", index=False)
     # print(f"total net:{total_net}\n"
     # f"profit:{total_profit}\n"
     # f"loss:{total_loss}\n"
