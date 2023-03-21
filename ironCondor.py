@@ -114,8 +114,6 @@ class IronCondor:
         
         return [select.values[0], timecopy]
 
-
-
     def loadPrices(self, dates, strikePrices):
         symbol = "NFO"
         #day, yearstripped, year, month, monthnum, year
@@ -192,6 +190,114 @@ class IronCondor:
                 print(colored("Skipping", "green"))
             
         return [entryPrices, exitPrices, tickers, selectedEntryTime, selectedExitTime]
+    def loadPrices_stoploss(self, dates, strikePrices):
+        symbol = "NFO"
+        #day, yearstripped, year, month, monthnum, year
+        dateDataTuple = namedtuple("dateDataTuple", ["day", "year", "yearStripped", "month", "monthNum"])
+        class dateIdEnum(IntEnum):
+            ENTRY = 0
+            EXIT = 1
+        dateData = []
+        for d in dates:
+            dateData.append(
+                dateDataTuple(
+                    "{:02d}".format(d.day),
+                    d.year,
+                    str(d.year)[-2:],
+                    helper.Month[d.month - 1],
+                    "{:02d}".format(d.month)
+                )
+            )
+        ##generate tickers
+        tickers = []
+        date = dateData[dateIdEnum.EXIT] #dateData[1] is the exitDay
+#        for date in dates:
+            #NIFTY03FEB22171800PE.NFO
+
+        for idx, strikePrice in enumerate(strikePrices):
+            optionType = None
+            if idx % 2 == 0:
+                optionType = "CE"
+            else:
+                optionType = "PE"
+            stock_id = f"{self.stockName}{date.day}{date.month}{date.yearStripped}{strikePrice}{optionType}.{symbol}"
+            tickers.append(stock_id)
+
+        ##get data from files
+        extension = "csv"
+        fileNamePrefix = "GFDL"
+        data_dir = f"{self.stockName}_OPTIONS_DATA"
+        entryPrices = []
+        exitPrices = []
+        selectedEntryTime = []
+        selectedExitTime = []
+        ticker_rows = []
+        for i, dd in enumerate(dateData):
+            month_dir = f"{dd.month}_{dd.year}"
+            fileName = f"{fileNamePrefix}{symbol}_OPTIONS_{dd.day}{dd.monthNum}{dd.year}.{extension}"
+            filePath = os.path.join(data_dir, month_dir, fileName)
+            Time = None
+            try:
+                df = pd.read_csv(filePath)
+                Time = self.entryTime
+                for ticker in tickers:
+                    selectTicker = df[(df["Ticker"] == ticker)]
+                    ticker_rows.append(selectTicker)
+                    #select entry prices
+                    [price, t] = IronCondor.selectPriceFromDF(df, ticker, Time)
+                    selectedEntryTime.append(t)
+                    entryPrices.append(price)
+
+
+                #select exit prices one by one
+                #set time to search for, 1 second after the entry time
+                td = datetime.time(0,0,1)
+                exit_time = datetime.datetime.combine(datetime.date(1,1,1) , self.entryTime)
+                exit_time = (exit_time + datetime.timedelta(seconds=1)).time()
+                
+                for i,ticker in enumerate(tickers):
+                    #set
+                    print(exit_time)
+
+
+                #calculate profit one by one
+
+
+                
+                ##select all rows with ticker 1 as ticker value
+                # if i == dateIdEnum.ENTRY:
+            #         debugInfo[0] = "Entry"
+            #         Time = self.entryTime
+            #         debugInfo[1] = Time
+            #         for ticker in tickers:
+            #             debugInfo[2] = ticker
+            #             [price, t] = IronCondor.selectPriceFromDF(df, ticker, Time)
+            #             selectedEntryTime.append(t)
+            #             entryPrices.append(price)
+            #     elif i == dateIdEnum.EXIT:
+            #         debugInfo[0] = "Exit"
+            #         Time = self.exitTime
+            #         debugInfo[1] = Time
+
+            #         for ticker in tickers:
+            #             debugInfo[2] = ticker 
+            #             [price, t] = IronCondor.selectPriceFromDF(df, ticker, Time)
+            #             exitPrices.append(price)
+            #             selectedExitTime.append(t)
+            # except Exception as e:
+            #     #traceback.print_exc()
+            #     #err in NIFTY11AUG2216850PE.NFO 15:14:59 doesnt exist
+            #     print(e)
+            #     dbgInfo = f"Fail: {debugInfo[0]} [{debugInfo[2]},{debugInfo[1]}] does not exist in {filePath}" 
+            #     print(colored(dbgInfo, "red"))
+            #     print(colored("Skipping", "green"))
+            except Exception as e:
+                print(e)
+                #pass
+        
+        #return [entryPrices, exitPrices, tickers, selectedEntryTime, selectedExitTime]
+        
+
     def calcSpread(entryPrices):
             oe = IronCondor.oe
             return (
@@ -337,12 +443,11 @@ class IronCondor:
             #get prices based on stockname, date, optiontype
             try:
                 oe = IronCondor.oe
-                [entryPrices, exitPrices, tickers, entT, extT] = self.loadPrices([entryDate, exitDate], optionStrikePrices)
+                [entryPrices, exitPrices, tickers, entT, extT] = self.loadPrices_stoploss([entryDate, exitDate], optionStrikePrices)
                 #calculate the profits
-                profits = self.calcProfits(exitPrices, entryPrices)
-                print(profits)
             except:
                 pass
+            input()
         
     def ironCondorAlgorithm(self):
         # IronCondor.testEntry()
