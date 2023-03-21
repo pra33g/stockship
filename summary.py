@@ -67,13 +67,13 @@ def createSummary(data, fname):
     [df["con.wins"],df["con.losses"]] = conWinLoss(results)
     max_con_wins = max(df['con.wins'])
     max_con_losses = max(df['con.losses'])
-    lots = 2
+    lots = 1
     margin = 50000
     final_drawDown = abs(minDrawdown(data['Drawdown']) * lots)
     total_return = data['WeekCumulative'].tolist()[-1] * lots
     calmar = (total_return / final_drawDown)
     avg_win = calcAvgWins(df['results'], total_profit)
-    avg_loss = calcAvgLosses(df['results'], total_loss)
+    avg_loss = abs(calcAvgLosses(df['results'], total_loss))
     rr = avg_win / avg_loss
     total_trades = int(4 * lots * (len(data) / 4))
     brokerage = total_trades * 20
@@ -99,11 +99,46 @@ def createSummary(data, fname):
 
     app = pd.DataFrame(columns=[
         "bt",
+        "lots",
+        "margin",
+        "fdd",
+        "treturn",
+        "calmar",
+        "avgwin",
+        "avgloss",
+        "rr",
+        "totaltrades",
+        "brokerage",
+        "b_margin",
+        "b_cost",
+        "slippage",
+        "tax",
+        "taxcost",
         "dd",
         "roi",
         "roi/dd"
     ])
-    app.loc[len(app)] = [fname, actual_dd, actual_roi, (actual_roi/actual_dd)]
+    app.loc[len(app)] = [
+        fname,
+        lots,
+        margin,
+        final_drawDown,
+        total_return,
+        calmar,
+        avg_win,
+        avg_loss,
+        rr,
+        total_trades,
+        brokerage,
+        brokerage_margin,
+        brokerage_cost,
+        slippage,
+        tax,
+        tax_cost,
+        actual_dd,
+        actual_roi,
+        (actual_roi/actual_dd)
+    ]
     #write data to file
     #results.csv must exist
     #read df

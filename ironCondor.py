@@ -108,7 +108,7 @@ class IronCondor:
                 timecopy = datetime.datetime.combine(datetime.date.min, timecopy) - datetime.datetime.combine(datetime.date.min, td)
                 timecopy = (datetime.datetime.min + timecopy).time()
                 print(f"\t\t{oldTime} for {ticker} not found. using:{str(timecopy)}", end="\r")
-                input()
+
             else:
                 break
         
@@ -304,6 +304,46 @@ class IronCondor:
         df = pd.read_csv("ic-backtest.csv", parse_dates=["WeekBeginDate"])
         dd = IronCondor.calcDrawDown(df['Sum'])
         exit()
+
+    def stoploss(self):
+        #if os.path.exists(IronCondor.outputFileName):
+        #    return [pd.read_csv(IronCondor.outputFileName), IronCondor.outputFileName]
+        weeklyData_tup = weeklyData.createWeeklyData(self.stockName)
+        wd = weeklyData_tup[0]
+        weeks = weeklyData_tup[1]
+        for idx, data in wd.iterrows():
+            progress = '{:.2f}'.format(100 * idx/len(wd))
+            print(f"Progress: {progress}", end="\n")
+            weekBegin = weeks[idx][0]['Date'].date()
+            weekExpiry = weeks[idx][-1]['Date'].date()
+            try:
+                #set entry date
+                entryDate = self.calcEntryDate(weeks[idx], self.entryDay)
+                #set exit date
+                exitDate = self.calcExitDate(weeks[idx], self.exitDay)
+                entryTime = self.calcEntryTime()
+                exitTime = self.calcExitTime()
+            except Exception as e:
+                print(e)
+                dbgInfo = f"Fail: Perhaps day {self.entryDay or self.exitDay} not in week #{idx}"
+                print(colored(dbgInfo, "red", "on_white"))
+                print(pd.DataFrame(weeks[idx]))
+            optionStrikePrices = [
+                data['CE1'],
+                data['PE1'],
+                data['CE2'],
+                data['PE2'],
+            ]
+            #get prices based on stockname, date, optiontype
+            try:
+                oe = IronCondor.oe
+                [entryPrices, exitPrices, tickers, entT, extT] = self.loadPrices([entryDate, exitDate], optionStrikePrices)
+                #calculate the profits
+                profits = self.calcProfits(exitPrices, entryPrices)
+                print(profits)
+            except:
+                pass
+        
     def ironCondorAlgorithm(self):
         # IronCondor.testEntry()
         if os.path.exists(IronCondor.outputFileName):
@@ -514,5 +554,5 @@ class IronCondor:
         #write df to file
         df.to_csv(IronCondor.outputFileName, index=False)
         dbgInfo = "Generated " + IronCondor.outputFileName
-        print(colored(dbgInfo, "white", "on_light_blue"))
+        print(colored(dbgInfo, "white", "on_blue"))
         return [df, IronCondor.outputFileName]
