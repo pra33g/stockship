@@ -1,0 +1,9 @@
+1. check given entry and exit points
+2. 1h rollback only
+3. whether week skipped or not
+
+
+note:
+from entry file -> pick entry value at selected entry time
+from exit file -> pick exit value at 9:15:59 till value at 15:14:59
+calculate profit for all tickers at each minute
