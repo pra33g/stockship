@@ -1,6 +1,7 @@
 import weeklyData
 import pandas as pd
 import datetime
+from datetime import time
 import helper
 import os
 import traceback
@@ -232,37 +233,45 @@ class IronCondor:
         selectedEntryTime = []
         selectedExitTime = []
         ticker_rows = []
-        for i, dd in enumerate(dateData):
-            month_dir = f"{dd.month}_{dd.year}"
-            fileName = f"{fileNamePrefix}{symbol}_OPTIONS_{dd.day}{dd.monthNum}{dd.year}.{extension}"
-            filePath = os.path.join(data_dir, month_dir, fileName)
-            Time = None
-            try:
-                df = pd.read_csv(filePath)
-                Time = self.entryTime
-                for ticker in tickers:
-                    selectTicker = df[(df["Ticker"] == ticker)]
-                    ticker_rows.append(selectTicker)
-                    #select entry prices
-                    [price, t] = IronCondor.selectPriceFromDF(df, ticker, Time)
-                    selectedEntryTime.append(t)
-                    entryPrices.append(price)
+        dd = dateData[0]
+        month_dir = f"{dd.month}_{dd.year}"
+        fileName = f"{fileNamePrefix}{symbol}_OPTIONS_{dd.day}{dd.monthNum}{dd.year}.{extension}"
+        filePath = os.path.join(data_dir, month_dir, fileName)
+        Time = None
+        try:
+            df = pd.read_csv(filePath)
+            Time = self.entryTime
+            for ticker in tickers:
+                selectTicker = df[(df["Ticker"] == ticker)]
+                ticker_rows.append(selectTicker)
+                #select entry prices
+                [price, t] = IronCondor.selectPriceFromDF(df, ticker, Time)
+                selectedEntryTime.append(t)
+                entryPrices.append(price)
 
 
-                #select exit prices one by one
-                #set time to search for, 1 second after the entry time
-                td = datetime.time(0,0,1)
-                exit_time = datetime.datetime.combine(datetime.date(1,1,1) , self.entryTime)
-                exit_time = (exit_time + datetime.timedelta(seconds=1)).time()
+            #select exit prices one by one
+            #set time to search for, 1 min after the entry time
+            td = datetime.time(0,1,0)
+            exit_time = datetime.datetime.combine(datetime.date(1,1,1) , self.entryTime)
+            exit_time = (exit_time + datetime.timedelta(minutes=1)).time()
+            it = 2
+            while self.exitTime >= exit_time:
                 
                 for i,ticker in enumerate(tickers):
                     #set
                     print(exit_time)
+                    selectTime = ticker_rows[i][(ticker_rows[i]["Time"] == str(exit_time))]
+                    select = selectTime['Close']
+                    print(select.values)
+                input()
+                exit_time = datetime.datetime.combine(datetime.date(1,1,1) , self.entryTime)
+                exit_time = (exit_time + datetime.timedelta(minutes=it)).time()
+                it += 1
+                    
+            #calculate profit one by one
 
-
-                #calculate profit one by one
-
-
+            input()
                 
                 ##select all rows with ticker 1 as ticker value
                 # if i == dateIdEnum.ENTRY:
@@ -291,8 +300,8 @@ class IronCondor:
             #     dbgInfo = f"Fail: {debugInfo[0]} [{debugInfo[2]},{debugInfo[1]}] does not exist in {filePath}" 
             #     print(colored(dbgInfo, "red"))
             #     print(colored("Skipping", "green"))
-            except Exception as e:
-                print(e)
+        except Exception as e:
+            print(e)
                 #pass
         
         #return [entryPrices, exitPrices, tickers, selectedEntryTime, selectedExitTime]
@@ -661,3 +670,15 @@ class IronCondor:
         dbgInfo = "Generated " + IronCondor.outputFileName
         print(colored(dbgInfo, "white", "on_blue"))
         return [df, IronCondor.outputFileName]
+
+
+stock = "NIFTY"
+entry_day = "THURSDAY"
+entry_time = time(9, 29, 59)
+exit_day = "THURSDAY"
+exit_time = time(15,14,59)
+
+ic = IronCondor(stock, "ic-backtest.csv", entry_day, entry_time , exit_day, exit_time)
+ic.stoploss()
+
+
