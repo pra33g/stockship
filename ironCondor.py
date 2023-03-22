@@ -233,42 +233,47 @@ class IronCondor:
         selectedEntryTime = []
         selectedExitTime = []
         ticker_rows = []
-        dd = dateData[0]
-        month_dir = f"{dd.month}_{dd.year}"
-        fileName = f"{fileNamePrefix}{symbol}_OPTIONS_{dd.day}{dd.monthNum}{dd.year}.{extension}"
-        filePath = os.path.join(data_dir, month_dir, fileName)
-        Time = None
         try:
+            dd = dateData[0]
+            month_dir = f"{dd.month}_{dd.year}"
+            fileName = f"{fileNamePrefix}{symbol}_OPTIONS_{dd.day}{dd.monthNum}{dd.year}.{extension}"
+            filePath = os.path.join(data_dir, month_dir, fileName)
+            Time = None
             df = pd.read_csv(filePath)
             Time = self.entryTime
             for ticker in tickers:
                 selectTicker = df[(df["Ticker"] == ticker)]
-                ticker_rows.append(selectTicker)
                 #select entry prices
                 [price, t] = IronCondor.selectPriceFromDF(df, ticker, Time)
                 selectedEntryTime.append(t)
                 entryPrices.append(price)
 
-
             #select exit prices one by one
+            dd = dateData[1]
+            month_dir = f"{dd.month}_{dd.year}"
+            fileName = f"{fileNamePrefix}{symbol}_OPTIONS_{dd.day}{dd.monthNum}{dd.year}.{extension}"
+            filePath = os.path.join(data_dir, month_dir, fileName)
+            Time = None
+            df = pd.read_csv(filePath)
             #set time to search for, 1 min after the entry time
             td = datetime.time(0,1,0)
             exit_time = datetime.datetime.combine(datetime.date(1,1,1) , self.entryTime)
             exit_time = (exit_time + datetime.timedelta(minutes=1)).time()
             it = 2
+            print(filePath, dateData[dateIdEnum.ENTRY])
+            input()
             while self.exitTime >= exit_time:
-                
                 for i,ticker in enumerate(tickers):
                     #set
-                    print(exit_time)
-                    selectTime = ticker_rows[i][(ticker_rows[i]["Time"] == str(exit_time))]
+                    selectTicker = df[(df["Ticker"] == ticker)]
+                    #replace df with selected rows from prev line
+                    selectTime = df[(df["Time"] == str(exit_time))]
                     select = selectTime['Close']
-                    print(select.values)
-                input()
+                    print(selectTime)
+                    input()
                 exit_time = datetime.datetime.combine(datetime.date(1,1,1) , self.entryTime)
                 exit_time = (exit_time + datetime.timedelta(minutes=it)).time()
-                it += 1
-                    
+                it += 1                    
             #calculate profit one by one
 
             input()
@@ -452,6 +457,7 @@ class IronCondor:
             #get prices based on stockname, date, optiontype
             try:
                 oe = IronCondor.oe
+
                 [entryPrices, exitPrices, tickers, entT, extT] = self.loadPrices_stoploss([entryDate, exitDate], optionStrikePrices)
                 #calculate the profits
             except:
@@ -673,7 +679,7 @@ class IronCondor:
 
 
 stock = "NIFTY"
-entry_day = "THURSDAY"
+entry_day = "FRIDAY"
 entry_time = time(9, 29, 59)
 exit_day = "THURSDAY"
 exit_time = time(15,14,59)
