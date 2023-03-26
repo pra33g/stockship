@@ -191,7 +191,7 @@ class IronCondor:
                 print(colored("Skipping", "green"))
             
         return [entryPrices, exitPrices, tickers, selectedEntryTime, selectedExitTime]
-    def loadPrices_stoploss(self, dates, strikePrices, stoploss):
+    def loadPrices_stoploss(self, dates, strikePrices, stoploss, weekData):
         symbol = "NFO"
         #day, yearstripped, year, month, monthnum, year
         dateDataTuple = namedtuple("dateDataTuple", ["day", "year", "yearStripped", "month", "monthNum"])
@@ -251,90 +251,66 @@ class IronCondor:
                 entryPrices.append(price)
                 
             #select exit prices one by one
-            dd = dateData[1]
-            month_dir = f"{dd.month}_{dd.year}"
-            fileName = f"{fileNamePrefix}{symbol}_OPTIONS_{dd.day}{dd.monthNum}{dd.year}.{extension}"
-            filePath = os.path.join(data_dir, month_dir, fileName)
-            Time = None
-            df = pd.read_csv(filePath)
-            #set time to search for, 1 min after the entry time
-            td = datetime.time(0,1,0)
-            exit_time = datetime.datetime.combine(datetime.date(1,1,1) , time(9,15,59))
-            exit_time = (exit_time + datetime.timedelta(minutes=1)).time()
-            it = 2
-            week_high = 0
-            week_low = 0
-            stoploss_hit_data = []
-            print(f"{dates[0]} to {dates[1]}")
-            profits_sum = 0
-            while self.exitTime >= exit_time:
-                for i,ticker in enumerate(tickers):
-                    #set
-                    selectTicker = df[(df["Ticker"] == ticker)]
-                    #replace df with selected rows from prev line
-                    selectTime = selectTicker[(selectTicker["Time"] == str(exit_time))]
-                    select = selectTime['Close']
-                    if len(select.values) > 0:
-                        #print(ticker, exit_time, select.values[0])
-                        print(exit_time, end="\r")
-                        exitPrices.append(select.values[0])
-                    
-                if len(exitPrices) == 4:
-                    #calculate profit
-                    profits = self.calcProfits(exitPrices, entryPrices)
-                    profits_sum = sum(profits)
-                    #print(profits_sum)
-                    if profits_sum <= stoploss:
-                        print(colored("stoploss hit!", "red", "on_blue"))
-                        stoploss_hit_data.append(
-                            f"{exit_time}:{profits_sum}"
-                        )
-                        break
-#                print(exitPrices)
-                exitPrices.clear()
-                exit_time = datetime.datetime.combine(datetime.date(1,1,1) , time(9,15,59))
-                exit_time = (exit_time + datetime.timedelta(minutes=it)).time()
-                it += 1
-            #calculate profit one by one
- #           print(tickers, entryPrices, dbg)
-            #input(f"week->high:, {week_high}, \"\nweek->low:\", {week_low}")
-            print(profits_sum)
-            if len(stoploss_hit_data) > 0:
-                for shd in stoploss_hit_data:
-                    print(shd)
-            stoploss_hit_data.clear()
-                ##select all rows with ticker 1 as ticker value
-                # if i == dateIdEnum.ENTRY:
-            #         debugInfo[0] = "Entry"
-            #         Time = self.entryTime
-            #         debugInfo[1] = Time
-            #         for ticker in tickers:
-            #             debugInfo[2] = ticker
-            #             [price, t] = IronCondor.selectPriceFromDF(df, ticker, Time)
-            #             selectedEntryTime.append(t)
-            #             entryPrices.append(price)
-            #     elif i == dateIdEnum.EXIT:
-            #         debugInfo[0] = "Exit"
-            #         Time = self.exitTime
-            #         debugInfo[1] = Time
+            for d in weekData[1:]:
+                # dd = dateData[1]
+                d = d.Date.date()
+                dd = dateDataTuple(
+                    "{:02d}".format(d.day),
+                    d.year,
+                    str(d.year)[-2:],
+                    helper.Month[d.month - 1],
+                    "{:02d}".format(d.month)
+                )
+                month_dir = f"{dd.month}_{dd.year}"
+                fileName = f"{fileNamePrefix}{symbol}_OPTIONS_{dd.day}{dd.monthNum}{dd.year}.{extension}"
+                filePath = os.path.join(data_dir, month_dir, fileName)
+                Time = None
 
-            #         for ticker in tickers:
-            #             debugInfo[2] = ticker 
-            #             [price, t] = IronCondor.selectPriceFromDF(df, ticker, Time)
-            #             exitPrices.append(price)
-            #             selectedExitTime.append(t)
-            # except Exception as e:
-            #     #traceback.print_exc()
-            #     #err in NIFTY11AUG2216850PE.NFO 15:14:59 doesnt exist
-            #     print(e)
-            #     dbgInfo = f"Fail: {debugInfo[0]} [{debugInfo[2]},{debugInfo[1]}] does not exist in {filePath}" 
-            #     print(colored(dbgInfo, "red"))
-            #     print(colored("Skipping", "green"))
+                df = pd.read_csv(filePath)
+                #set time to search for, 1 min after the entry time
+                td = datetime.time(0,1,0)
+                exit_time = datetime.datetime.combine(datetime.date(1,1,1) , time(9,15,59))
+                exit_time = (exit_time + datetime.timedelta(minutes=1)).time()
+                it = 2
+                week_high = 0
+                week_low = 0
+                stoploss_hit_data = []
+                print(f"[{dates[0]}] to {dd.day}-{dd.month}-{dd.year}")
+                profits_sum = 0
+                while self.exitTime >= exit_time:
+                    for i,ticker in enumerate(tickers):
+                        selectTicker = df[(df["Ticker"] == ticker)]
+                        #replace df with selected rows from prev line
+                        selectTime = selectTicker[(selectTicker["Time"] == str(exit_time))]
+                        select = selectTime['Close']
+                        if len(select.values) > 0:
+                            #print(ticker, exit_time, select.values[0])
+                            print(exit_time, end="\r")
+                            exitPrices.append(select.values[0])
+                        
+                    if len(exitPrices) == 4:
+                        #calculate profit
+                        profits = self.calcProfits(exitPrices, entryPrices)
+                        profits_sum = sum(profits)
+                        #print(profits_sum)
+                        if profits_sum <= stoploss:
+                            print(colored("stoploss hit!", "red"))
+                            stoploss_hit_data.append(
+                                f"{exit_time}:{profits_sum}"
+                            )
+                            break
+                    exitPrices.clear()
+                    exit_time = datetime.datetime.combine(datetime.date(1,1,1) , time(9,15,59))
+                    exit_time = (exit_time + datetime.timedelta(minutes=it)).time()
+                    it += 1
+    #           print(tickers, entryPrices, dbg)
+                print(profits_sum)
+                if len(stoploss_hit_data) > 0:
+                    for shd in stoploss_hit_data:
+                        print(shd)
+                stoploss_hit_data.clear()
         except Exception as e:
             print(e)
-                #pass
-        
-        #return [entryPrices, exitPrices, tickers, selectedEntryTime, selectedExitTime]
         
 
     def calcSpread(entryPrices):
@@ -456,6 +432,7 @@ class IronCondor:
         wd = weeklyData_tup[0]
         weeks = weeklyData_tup[1]
         for idx, data in wd.iterrows():
+            print(colored(f"Week {idx}", "green", "on_white"))
             progress = '{:.2f}'.format(100 * idx/len(wd))
             print(f"Progress: {progress}", end="\n")
             weekBegin = weeks[idx][0]['Date'].date()
@@ -481,7 +458,7 @@ class IronCondor:
             #get prices based on stockname, date, optiontype
             try:
                 oe = IronCondor.oe
-                [entryPrices, exitPrices, tickers, entT, extT] = self.loadPrices_stoploss([entryDate, exitDate], optionStrikePrices, stoploss=-6000)
+                self.loadPrices_stoploss([entryDate, exitDate], optionStrikePrices, stoploss=-6000, weekData=weeks[idx])
                 #calculate the profits
             except:
                 pass
