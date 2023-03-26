@@ -294,7 +294,7 @@ class IronCondor:
                         profits_sum = sum(profits)
                         #print(profits_sum)
                         if profits_sum <= stoploss:
-                            print(colored("stoploss hit!", "red"))
+                            print(colored(f"stoploss hit at {exit_time}", "red"))
                             stoploss_hit_data.append(
                                 f"{exit_time}:{profits_sum}"
                             )
@@ -432,7 +432,7 @@ class IronCondor:
         wd = weeklyData_tup[0]
         weeks = weeklyData_tup[1]
         for idx, data in wd.iterrows():
-            print(colored(f"Week {idx}", "green", "on_white"))
+            print(colored(f"Week {idx + 1}", "green", "on_white"))
             progress = '{:.2f}'.format(100 * idx/len(wd))
             print(f"Progress: {progress}", end="\n")
             weekBegin = weeks[idx][0]['Date'].date()
