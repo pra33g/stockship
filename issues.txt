@@ -1,9 +1,8 @@
-1. check given entry and exit points
-2. 1h rollback only
-3. whether week skipped or not
+
+1. entry friday [9:59:59, 15,14,59] and exit thursday [3:29:59]
+	i. without stoploss
+	ii. with stoploss [6000, 5000, 4000]
 
 
-note:
-from entry file -> pick entry value at selected entry time
-from exit file -> pick exit value at 9:15:59 till value at 15:14:59
-calculate profit for all tickers at each minute
+1. weekwise profit entries in csv
+2. check exit prices from entry time upto 15:29:59 on entry day and all other days too

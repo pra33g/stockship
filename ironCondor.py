@@ -295,15 +295,12 @@ class IronCondor:
                         #print(profits_sum)
                         if profits_sum <= stoploss:
                             print(colored(f"stoploss hit at {exit_time}", "red"))
-                            stoploss_hit_data.append(
-                                f"{exit_time}:{profits_sum}"
-                            )
+                            stoploss_hit_data.append(f"{exit_time}:{profits_sum}")
                             break
                     exitPrices.clear()
                     exit_time = datetime.datetime.combine(datetime.date(1,1,1) , time(9,15,59))
                     exit_time = (exit_time + datetime.timedelta(minutes=it)).time()
                     it += 1
-    #           print(tickers, entryPrices, dbg)
                 print(profits_sum)
                 if len(stoploss_hit_data) > 0:
                     for shd in stoploss_hit_data:
