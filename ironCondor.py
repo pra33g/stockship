@@ -10,6 +10,7 @@ from enum import IntEnum
 from termcolor import colored
 import math
 from sys import platform
+import sys, traceback, threading
 
 if platform == "win32":
     os.system('color')
@@ -191,7 +192,13 @@ class IronCondor:
                 print(colored("Skipping", "green"))
             
         return [entryPrices, exitPrices, tickers, selectedEntryTime, selectedExitTime]
+
+
+        
     def loadPrices_stoploss(self, dates, strikePrices, stoploss, weekData):
+        outputFileNameStoploss = f"icbt[${stoploss}][{self.entryDay}({self.entryTime})-{self.exitDay}({self.exitTime})].csv"
+        if os.path.exists(outputFileNameStoploss):
+            return [pd.read_csv(outputFileNameStoploss), outputFileNameStoploss]        
         symbol = "NFO"
         #day, yearstripped, year, month, monthnum, year
         dateDataTuple = namedtuple("dateDataTuple", ["day", "year", "yearStripped", "month", "monthNum"])
@@ -212,8 +219,6 @@ class IronCondor:
         ##generate tickers
         tickers = []
         date = dateData[dateIdEnum.EXIT] #dateData[1] is the exitDay
-#        for date in dates:
-            #NIFTY03FEB22171800PE.NFO
 
         for idx, strikePrice in enumerate(strikePrices):
             optionType = None
@@ -243,17 +248,23 @@ class IronCondor:
             Time = None
             df = pd.read_csv(filePath)
             Time = self.entryTime
+            #select entry prices
             for ticker in tickers:
                 selectTicker = df[(df["Ticker"] == ticker)]
                 #select entry prices
                 [price, t] = IronCondor.selectPriceFromDF(df, ticker, Time)
                 selectedEntryTime.append(t)
                 entryPrices.append(price)
-                
-            #select exit prices one by one
-            for d in weekData[1:]:
+
+            #select exit prices one by one, starting from the beg day itself
+            oe = IronCondor.oe
+            exit_time = None
+            hit_stoploss = False
+            for idx, weekday in enumerate(weekData):
+                if hit_stoploss == True:
+                    break
                 # dd = dateData[1]
-                d = d.Date.date()
+                d = weekday.Date.date()
                 dd = dateDataTuple(
                     "{:02d}".format(d.day),
                     d.year,
@@ -278,6 +289,7 @@ class IronCondor:
                 print(f"[{dates[0]}] to {dd.day}-{dd.month}-{dd.year}")
                 profits_sum = 0
                 while self.exitTime >= exit_time:
+                    exitPrices.clear()
                     for i,ticker in enumerate(tickers):
                         selectTicker = df[(df["Ticker"] == ticker)]
                         #replace df with selected rows from prev line
@@ -285,7 +297,8 @@ class IronCondor:
                         select = selectTime['Close']
                         if len(select.values) > 0:
                             #print(ticker, exit_time, select.values[0])
-                            print(exit_time, end="\r")
+                            # Print current exit time which is being checked
+                            # print(exit_time, end="\r")
                             exitPrices.append(select.values[0])
                         
                     if len(exitPrices) == 4:
@@ -296,19 +309,221 @@ class IronCondor:
                         if profits_sum <= stoploss:
                             print(colored(f"stoploss hit at {exit_time}", "red"))
                             stoploss_hit_data.append(f"{exit_time}:{profits_sum}")
+                            hit_stoploss = True
                             break
-                    exitPrices.clear()
+                    
                     exit_time = datetime.datetime.combine(datetime.date(1,1,1) , time(9,15,59))
                     exit_time = (exit_time + datetime.timedelta(minutes=it)).time()
                     it += 1
-                print(profits_sum)
+
+                print(profits_sum, "\n")
+
+                
                 if len(stoploss_hit_data) > 0:
                     for shd in stoploss_hit_data:
                         print(shd)
                 stoploss_hit_data.clear()
+            
+            # print(entryPrices,
+            # exitPrices,
+            # tickers,
+            # self.entryTime,
+            # exit_time, weekData[idx])
+
+            return [entryPrices, exitPrices, tickers, self.entryTime, exit_time]
+
         except Exception as e:
             print(e)
         
+    def stoploss(self):
+        #if os.path.exists(IronCondor.outputFileName):
+        #    return [pd.read_csv(IronCondor.outputFileName), IronCondor.outputFileName]
+        weeklyData_tup = weeklyData.createWeeklyData(self.stockName)
+        wd = weeklyData_tup[0]
+        weeks = weeklyData_tup[1]
+        for idx, data in wd.iterrows():
+            print(colored(f"Week {idx + 1}", "green", "on_white"))
+            progress = '{:.2f}'.format(100 * idx/len(wd))
+            print(f"Progress: {progress}", end="\n")
+            weekBegin = weeks[idx][0]['Date'].date()
+            weekExpiry = weeks[idx][-1]['Date'].date()
+            try:
+                #set entry date
+                entryDate = self.calcEntryDate(weeks[idx], self.entryDay)
+                #set exit date
+                exitDate = self.calcExitDate(weeks[idx], self.exitDay)
+                entryTime = self.calcEntryTime()
+                exitTime = self.calcExitTime()
+            except Exception as e:
+                print(e)
+                dbgInfo = f"Fail: Perhaps day {self.entryDay or self.exitDay} not in week #{idx}"
+                print(colored(dbgInfo, "red", "on_white"))
+                print(pd.DataFrame(weeks[idx]))
+            optionStrikePrices = [
+                data['CE1'],
+                data['PE1'],
+                data['CE2'],
+                data['PE2'],
+            ]
+            #get prices based on stockname, date, optiontype
+            try:
+                oe = IronCondor.oe
+                [entryPrices, exitPrices, tickers, entT, extT] = self.loadPrices_stoploss([entryDate, exitDate], optionStrikePrices, stoploss=-6000, weekData=weeks[idx])
+                #calculate the profits
+                profits = self.calcProfits(exitPrices, entryPrices)
+                weekProfitNet = sum(profits) #sum column in weekly
+                sctt = self.calcSctt(exitPrices, entryPrices)
+                tc = IronCondor.calcTC(exitPrices, entryPrices)
+                sebi = IronCondor.calcSEBI(exitPrices, entryPrices)
+                gst = IronCondor.calcGST(sebi, tc)
+                stamp = IronCondor.calcStampCharges(entryPrices, exitPrices)
+                totalCost = IronCondor.calcTotalCost(sctt, tc, sebi, gst, stamp)
+                netProfits = IronCondor.calcNetProfits(profits, totalCost)
+
+                #add first row of four
+                entry = oe.CE1
+                data = [
+                    weekBegin,
+                    wd.loc[idx]['FirstDay'],
+                    weekExpiry,
+                    wd.loc[idx]['LastDay'],
+                    entryDate,
+                    helper.weekDaysListNormal[entryDate.weekday()],
+                    #self.entryTime,
+                    entT[entry], #7
+                    exitDate,
+                    helper.weekDaysListNormal[exitDate.weekday()],
+                    extT[entry], #10
+                    tickers[entry],
+                    entryPrices[entry],
+                    None,
+                    exitPrices[entry],
+                    profits[entry],
+                    None, #week profit net only to be printed in PE2
+                    None, #cumulative weekly
+                    sctt[entry],
+                    tc[entry],
+                    sebi[entry],
+                    gst[entry],
+                    stamp[entry],
+                    totalCost[entry],
+                    netProfits[entry],
+                    None, #net cumulative
+                ]
+                df.loc[len(df)] = data
+                #second row
+                entry = oe.PE1
+                data = [
+                    None, None, None, None, None, None,
+                    entT[entry],
+                    None, None,
+                    extT[entry],
+                    tickers[entry],
+                    entryPrices[entry],
+                    None,
+                    exitPrices[entry],
+                    profits[entry],
+                    None, #week profit net only to be printed in PE2
+                    None, #cumulative weekly
+                    sctt[entry],
+                    tc[entry],
+                    sebi[entry],
+                    gst[entry],
+                    stamp[entry],
+                    totalCost[entry],
+                    netProfits[entry],
+                    None, #net cumulative
+
+                ]
+                df.loc[len(df)] = data
+                #third row
+                entry = oe.CE2
+                data = [
+                    None, None, None, None, None, None,
+                    entT[entry],
+                    None, None,
+                    extT[entry],
+                    tickers[entry],
+                    entryPrices[entry],
+                    None,
+                    exitPrices[entry],
+                    profits[entry],
+                    None, #week profit net only to be printed in PE2
+                    None, #cumulative weekly
+                    sctt[entry],
+                    tc[entry],
+                    sebi[entry],
+                    gst[entry],
+                    stamp[entry],
+                    totalCost[entry],
+                    netProfits[entry],
+                    None, #net cumulative
+
+                ]
+                df.loc[len(df)] = data
+                #fourth row
+                entry = oe.PE2
+                data = [
+                    None, None, None, None, None, None,
+                    entT[entry],
+                    None, None,
+                    extT[entry],
+                    tickers[entry],
+                    entryPrices[entry],
+                    IronCondor.calcSpread(entryPrices),
+                    exitPrices[entry],
+                    profits[entry],
+                    weekProfitNet,
+                    None, #cumulative weekly
+                    sctt[entry],
+                    tc[entry],
+                    sebi[entry],
+                    gst[entry],
+                    stamp[entry],
+                    totalCost[entry],
+                    netProfits[entry],
+                    None, #net cumulative
+                ]
+                df.loc[len(df)] = data
+
+                break
+            except IndexError as ie:
+                #print(ie)
+                print(colored(f"Week: #{idx}", "light_red"))
+            except Exception as e:
+                print(e)
+                traceback.print_exception(e)
+                dbgInfo = "Fail (Probably value missing): Week#"+ str(idx)
+                print(colored(dbgInfo, "red"))
+            except Exception as e:
+                print(e)
+        
+        #set weekly sum cumulative
+        weekCumulative = []
+        adder = 0
+        profit = df['Profit']
+        for idx, p in enumerate(profit):
+            adder += p
+            weekCumulative.append(adder)
+        df['WeekCumulative'] = weekCumulative
+        #set total cumulateive
+        netCumulative = []
+        netProfit = df['NetProfit']
+        adder = 0
+        for p in netProfit:
+            adder += p
+            netCumulative.append(adder)
+        df['NetCumulative'] = netCumulative
+        #calculate weekly drawdown
+        drawDown = IronCondor.calcDrawDown(df['Sum'])
+        df['Drawdown'] = drawDown
+        
+        #write df to file
+        df.to_csv(IronCondor.outputFileName, index=False)
+        dbgInfo = "Generated " + outputFileNameStoploss
+        print(colored(dbgInfo, "white", "on_blue"))
+        return [df, outputFileNameStoploss]
+  
 
     def calcSpread(entryPrices):
             oe = IronCondor.oe
@@ -422,43 +637,7 @@ class IronCondor:
         dd = IronCondor.calcDrawDown(df['Sum'])
         exit()
 
-    def stoploss(self):
-        #if os.path.exists(IronCondor.outputFileName):
-        #    return [pd.read_csv(IronCondor.outputFileName), IronCondor.outputFileName]
-        weeklyData_tup = weeklyData.createWeeklyData(self.stockName)
-        wd = weeklyData_tup[0]
-        weeks = weeklyData_tup[1]
-        for idx, data in wd.iterrows():
-            print(colored(f"Week {idx + 1}", "green", "on_white"))
-            progress = '{:.2f}'.format(100 * idx/len(wd))
-            print(f"Progress: {progress}", end="\n")
-            weekBegin = weeks[idx][0]['Date'].date()
-            weekExpiry = weeks[idx][-1]['Date'].date()
-            try:
-                #set entry date
-                entryDate = self.calcEntryDate(weeks[idx], self.entryDay)
-                #set exit date
-                exitDate = self.calcExitDate(weeks[idx], self.exitDay)
-                entryTime = self.calcEntryTime()
-                exitTime = self.calcExitTime()
-            except Exception as e:
-                print(e)
-                dbgInfo = f"Fail: Perhaps day {self.entryDay or self.exitDay} not in week #{idx}"
-                print(colored(dbgInfo, "red", "on_white"))
-                print(pd.DataFrame(weeks[idx]))
-            optionStrikePrices = [
-                data['CE1'],
-                data['PE1'],
-                data['CE2'],
-                data['PE2'],
-            ]
-            #get prices based on stockname, date, optiontype
-            try:
-                oe = IronCondor.oe
-                self.loadPrices_stoploss([entryDate, exitDate], optionStrikePrices, stoploss=-6000, weekData=weeks[idx])
-                #calculate the profits
-            except:
-                pass
+
     def ironCondorAlgorithm(self):
         # IronCondor.testEntry()
         if os.path.exists(IronCondor.outputFileName):

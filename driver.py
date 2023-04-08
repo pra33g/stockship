@@ -5,8 +5,8 @@ import summary
 
 ##
 stock = "NIFTY"
-entry_day = "THURSDAY"
-entry_time = time(9, 29, 59)
+entry_day = "FRIDAY"
+entry_time = time(15, 14, 59)
 exit_day = "THURSDAY"
 exit_time = time(15,14,59)
 

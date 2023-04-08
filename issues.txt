@@ -5,4 +5,4 @@
 
 
 1. weekwise profit entries in csv
-2. check exit prices from entry time upto 15:29:59 on entry day and all other days too
+2. check exit prices from entry time upto 15:29:59 on entry day and all other days too - [x]
