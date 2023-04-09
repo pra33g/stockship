@@ -1,7 +1,7 @@
 
-1. entry friday [9:59:59, 15,14,59] and exit thursday [3:29:59]
-	i. without stoploss
-	ii. with stoploss [6000, 5000, 4000]
+1. entry friday [a=9:59:59,b=15,14,59] and exit thursday [e=15:29:59]
+		i. without stoploss
+		ii. with stoploss [x=6000, y=5000, z=4000]
 
 
 1. weekwise profit entries in csv
