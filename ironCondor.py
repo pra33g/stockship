@@ -28,7 +28,7 @@ class IronCondor:
     
     outputFileName = None
     brokerage = 20 * 2
-    def __init__(self, stockName, outputFileName = "ironCondorAlgorithm.csv",  entryDay = None, entryTime = None, exitDay = None, exitTime = None):
+    def __init__(self, stockName, entryDay = None, entryTime = None, exitDay = None, exitTime = None):
         self.stockName = stockName
         self.entryDay = entryDay
         self.entryTime = entryTime
@@ -326,7 +326,17 @@ class IronCondor:
             # tickers,
             # self.entryTime,
             # exit_time, weekData[idx])
-
+            if len(entryPrices) != 4:
+                size = len(entryPrices)
+                avg = sum(entryPrices) / size
+                for i in range (1, size - 1):
+                    entryPrices.append(avg)
+                    
+            if len(exitPrices) != 4:
+                size = len(exitPrices)
+                avg = sum(exitPrices) / size
+                for i in range (1, size - 1):
+                    exitPrices.append(avg)
             return [entryPrices, exitPrices, tickers, selectedEntryTime, weekData[idx].Date.date(), selectedExitTime]
 
         except Exception as e:
