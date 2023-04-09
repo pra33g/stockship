@@ -274,6 +274,7 @@ class IronCondor:
                 df = pd.read_csv(filePath)
                 #set time to search for, 1 min after the entry time
                 morningTime = time(9,15,59)
+                eveningTime = time(15,29,59)
                 td = datetime.time(0,1,0)
                 exit_time = datetime.datetime.combine(datetime.date(1,1,1) , morningTime)
                 exit_time = (exit_time + datetime.timedelta(minutes=1)).time()
@@ -283,7 +284,10 @@ class IronCondor:
                 stoploss_hit_data = []
                 print(f"[{dates[0]}] to {dd.day}-{dd.month}-{dd.year}")
                 profits_sum = 0
-                while self.exitTime >= exit_time:
+
+                if idx == len(weekData) - 1 :
+                    eveningTime = self.exitTime
+                while eveningTime >= exit_time:
                     exitPrices.clear()
                     selectedExitTime.clear()
                     for i,ticker in enumerate(tickers):
@@ -295,7 +299,7 @@ class IronCondor:
                         if len(select.values) > 0:
                             #print(ticker, exit_time, select.values[0])
                             # Print current exit time which is being checked
-                            # print(exit_time, end="\r")
+                            print(exit_time, end="\r")
                             exitPrices.append(select.values[0])
                         
                     if len(exitPrices) == 4:
