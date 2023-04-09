@@ -299,7 +299,7 @@ class IronCondor:
                         if len(select.values) > 0:
                             #print(ticker, exit_time, select.values[0])
                             # Print current exit time which is being checked
-                            print(exit_time, end="\r")
+                            # print(exit_time, end="\r")
                             exitPrices.append(select.values[0])
                         
                     if len(exitPrices) == 4:
